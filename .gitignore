@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 .git.dashboard-source/
+dashboard/site-package.tar.gz
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
