@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dashboard dos resultados municipais da Unidade Popular na Baixada Santista — Eleições 2026.">
+  <title>UP na Baixada Santista · 2026</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="eyebrow">Eleições gerais · 2026 · dados oficiais TSE</div>
+    <h1>Geografia eleitoral da <span>Unidade Popular</span></h1>
+    <p>Baixada Santista · leitura municipal</p>
+  </header>
+
+  <main>
+    <section class="notice" aria-label="Limite dos dados">
+      <strong>Escopo atual:</strong> resultados por município. O TSE ainda não publicou os arquivos necessários para análises por zona, seção, local de votação ou bairro.
+    </section>
+
+    <section class="filters" aria-label="Filtros do dashboard">
+      <label>Cargo <select id="office"></select></label>
+      <label>Candidatura <select id="candidate"></select></label>
+      <label>Ordenar por <select id="metric">
+        <option value="percent_valid_votes">Percentual de votos válidos</option>
+        <option value="candidate_votes">Votos absolutos</option>
+        <option value="municipality_share_of_baixada_candidate_votes">Participação na Baixada</option>
+      </select></label>
+    </section>
+
+    <section class="kpis" aria-label="Indicadores">
+      <article><span>Votos na Baixada</span><strong id="kpiVotes">—</strong></article>
+      <article><span>% de votos válidos</span><strong id="kpiPercent">—</strong></article>
+      <article><span>Município mais forte</span><strong id="kpiStronghold">—</strong></article>
+      <article><span>Participação no total</span><strong id="kpiShare">—</strong></article>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel chart-panel">
+        <div class="panel-title"><div><span class="section-label">Ranking</span><h2 id="chartTitle">—</h2></div><span id="metricLabel" class="pill">—</span></div>
+        <div id="chart" class="bar-chart" role="img" aria-label="Ranking municipal"></div>
+      </article>
+      <aside class="panel method">
+        <span class="section-label">Como ler</span>
+        <h2>Comparação responsável</h2>
+        <p>Percentuais usam votos válidos do mesmo cargo e município. Não somamos cargos diferentes para formar um percentual eleitoral.</p>
+        <p>“Participação na Baixada” indica a parcela dos votos daquela candidatura que veio de cada município.</p>
+        <a href="https://resultados.tse.jus.br/oficial/app/index.html" target="_blank" rel="noreferrer">Abrir resultados oficiais do TSE ↗</a>
+      </aside>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-title"><div><span class="section-label">Dados</span><h2>Resultados municipais</h2></div><button id="download" type="button">Baixar CSV filtrado</button></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Município</th><th>Votos UP</th><th>% válidos</th><th>Participação na Baixada</th><th>Posição</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+    </section>
+
+    <section class="source-note">
+      <span>Fonte</span> Portal Resultados do TSE, JSON oficial por município, 1º turno. Atualização dos dados mostrada no arquivo de origem.
+    </section>
+  </main>
+  <footer>Projeto de análise eleitoral · resultados descritivos; não atribuir causalidade a padrões territoriais.</footer>
+  <script src="app.js"></script>
+</body>
+</html>

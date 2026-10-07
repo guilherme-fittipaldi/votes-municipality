@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+.git.dashboard-source/
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
