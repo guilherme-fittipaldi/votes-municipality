@@ -30,10 +30,10 @@
     </section>
 
     <section class="kpis" aria-label="Indicadores">
-      <article><span>Votos na Baixada</span><strong id="kpiVotes">—</strong></article>
-      <article><span>% de votos válidos</span><strong id="kpiPercent">—</strong></article>
-      <article><span>Município mais forte</span><strong id="kpiStronghold">—</strong></article>
-      <article><span>Participação no total</span><strong id="kpiShare">—</strong></article>
+      <article><span>Votos na Baixada <button class="info" type="button" aria-label="Explicação: Votos na Baixada"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Soma dos votos da candidatura selecionada nos nove municípios da Baixada Santista.</span></button></span><strong id="kpiVotes">—</strong></article>
+      <article><span>% de votos válidos <button class="info" type="button" aria-label="Explicação: percentual de votos válidos"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Percentual da candidatura sobre os votos válidos do mesmo cargo no município que lidera a ordenação atual.</span></button></span><strong id="kpiPercent">—</strong></article>
+      <article><span>Município mais forte <button class="info" type="button" aria-label="Explicação: município mais forte"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Município que aparece em primeiro lugar conforme o critério de ordenação selecionado.</span></button></span><strong id="kpiStronghold">—</strong></article>
+      <article><span>Participação no total <button class="info" type="button" aria-label="Explicação: participação no total"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Parcela dos votos da candidatura na Baixada que veio do município que lidera a ordenação atual.</span></button></span><strong id="kpiShare">—</strong></article>
     </section>
 
     <section class="content-grid">
@@ -53,7 +53,7 @@
     <section class="panel table-panel">
       <div class="panel-title"><div><span class="section-label">Dados</span><h2>Resultados municipais</h2></div><button id="download" type="button">Baixar CSV filtrado</button></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>Município</th><th>Votos UP</th><th>% válidos</th><th>Participação na Baixada</th><th>Posição</th></tr></thead>
+        <thead><tr><th>Município</th><th>Votos UP <button class="info" type="button" aria-label="Explicação: Votos UP"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Quantidade de votos recebidos pela candidatura no município.</span></button></th><th>% válidos <button class="info" type="button" aria-label="Explicação: percentual de votos válidos"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Votos da candidatura divididos pelos votos válidos do mesmo cargo no município.</span></button></th><th>Participação na Baixada <button class="info" type="button" aria-label="Explicação: participação na Baixada"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Percentual dos votos da candidatura na Baixada que foi registrado neste município.</span></button></th><th>Posição <button class="info" type="button" aria-label="Explicação: posição"><span aria-hidden="true">i</span><span class="tooltip" role="tooltip">Posição proporcional da candidatura no município, calculada pelo percentual de votos válidos.</span></button></th></tr></thead>
         <tbody id="rows"></tbody>
       </table></div>
     </section>
