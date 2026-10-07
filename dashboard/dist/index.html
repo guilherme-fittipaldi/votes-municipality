@@ -20,13 +20,14 @@
     </section>
 
     <section class="filters" aria-label="Filtros do dashboard">
-      <label>Cargo <select id="office"></select></label>
-      <label>Candidatura <select id="candidate"></select></label>
-      <label>Ordenar por <select id="metric">
+      <div class="filters-intro"><span class="section-label">Filtros</span><h2>Selecione o candidato</h2></div>
+      <label>Cargo <span class="select-wrap"><select id="office"></select></span></label>
+      <label>Candidatura <span class="select-wrap"><select id="candidate"></select></span></label>
+      <label>Ordenar por <span class="select-wrap"><select id="metric">
         <option value="percent_valid_votes">Percentual de votos válidos</option>
         <option value="candidate_votes">Votos absolutos</option>
         <option value="municipality_share_of_baixada_candidate_votes">Participação na Baixada</option>
-      </select></label>
+      </select></span></label>
     </section>
 
     <section class="kpis" aria-label="Indicadores">
