@@ -1,5 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "echo Static dashboard",
-  "outputDirectory": "dashboard/dist"
-}
