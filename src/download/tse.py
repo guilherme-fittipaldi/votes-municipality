@@ -80,7 +80,9 @@ class TSEClient:
         return Request(url, headers={"User-Agent": "up-eleitoral-pipeline/0.1"})
 
     def package(self, package_id: str) -> dict[str, Any] | None:
-        url = f"{CKAN_API}?{urlencode({'id': package_id})}"
+        # O CDN do portal pode servir uma resposta CKAN antiga por alguns minutos.
+        # Um parâmetro semântico neutro evita reutilizar esse cache na discovery.
+        url = f"{CKAN_API}?{urlencode({'id': package_id, 'cache_bust': datetime.now(UTC).timestamp()})}"
         try:
             with urlopen(self._request(url), timeout=self.timeout_seconds) as response:
                 payload = json.loads(response.read().decode("utf-8"))
@@ -100,6 +102,30 @@ class TSEClient:
             if resource.get("name", "").strip().casefold() == spec.resource_name.casefold():
                 return resource
         return None
+
+    def _cached_source(self, spec: ResourceSpec) -> dict[str, Any] | None:
+        """Recupera metadados de uma fonte já baixada se o CKAN estiver indisponível."""
+        provenance_path = self.raw_dir / f"{spec.key}.provenance.json"
+        if not provenance_path.exists():
+            return None
+        try:
+            provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        filename = provenance.get("filename")
+        url = provenance.get("url")
+        if not filename or not url or not (self.raw_dir / filename).exists():
+            return None
+        return {
+            "state": "available",
+            "required": spec.required,
+            "package": spec.package,
+            "resource_name": spec.resource_name,
+            "description": spec.description,
+            "url": url,
+            "resource": provenance.get("ckan_resource"),
+            "discovery": "cached_provenance_after_ckan_error",
+        }
 
     def discover(self, year: int) -> dict[str, Any]:
         """Persiste um manifesto mesmo quando resultados ainda não existem."""
@@ -123,6 +149,11 @@ class TSEClient:
                     "resource": resource,
                 }
             except (HTTPError, URLError, OSError, json.JSONDecodeError) as exc:
+                fallback = self._cached_source(spec)
+                if fallback:
+                    fallback["ckan_error"] = str(exc)
+                    discovered["sources"][spec.key] = fallback
+                    continue
                 discovered["sources"][spec.key] = {
                     "state": "error",
                     "required": spec.required,

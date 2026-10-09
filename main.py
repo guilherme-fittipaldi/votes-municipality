@@ -12,6 +12,7 @@ from src.config.regions import get_region
 from src.download.tse import SourceUnavailableError, TSEClient
 from src.processing.ingest import ingest_candidates, ingest_polling_places
 from src.processing.municipality_results import ingest_municipality_results, result_quality
+from src.processing.detailed_results import ingest_detailed_results
 
 
 ROOT = Path(__file__).resolve().parent
@@ -33,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--party", default="UP")
     parser.add_argument("--region", default="baixada_santista")
     parser.add_argument(
-        "--stage", choices=("discover", "pre-results", "municipality-results", "all"), default="all",
+        "--stage", choices=("discover", "pre-results", "municipality-results", "detailed-results", "all"), default="all",
         help="'pre-results' processa somente fontes já disponíveis; votos serão incluídos em etapa posterior.",
     )
     return parser.parse_args()
@@ -76,6 +77,24 @@ def write_municipality_results(
     )
 
 
+def write_detailed_results(zones, sections, quality, year: int, region_slug: str) -> None:
+    destination = ROOT / "outputs" / "tables"
+    destination.mkdir(parents=True, exist_ok=True)
+    _write_table(
+        zones,
+        destination / f"up_votes_municipality_zone_{region_slug}_{year}.parquet",
+        destination / f"up_votes_municipality_zone_{region_slug}_{year}.csv",
+    )
+    _write_table(
+        sections,
+        destination / f"up_votes_section_{region_slug}_{year}.parquet",
+        destination / f"up_votes_section_{region_slug}_{year}.csv",
+    )
+    (ROOT / "outputs" / f"quality_detailed_results_{year}.json").write_text(
+        json.dumps(quality, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+
 def main() -> int:
     args = parse_args()
     setup_logging()
@@ -103,7 +122,7 @@ def main() -> int:
         write_municipality_results(results, candidates, args.year, region.slug, len(region.municipalities))
         print("Resultados municipais oficiais importados em outputs/tables/.")
 
-    if args.stage == "all":
+    if args.stage in {"detailed-results", "all"}:
         unavailable = [
             key for key in ("section_votes", "candidate_municipality_zone_votes")
             if sources[key]["state"] != "available"
@@ -114,7 +133,15 @@ def main() -> int:
                 "A análise de votos não foi executada."
             )
             return 2
-        raise NotImplementedError("Adaptador de resultados será implementado após schema oficial de 2026 ser publicado.")
+        municipality_zone_zip = client.download(
+            "candidate_municipality_zone_votes", sources["candidate_municipality_zone_votes"]
+        )
+        section_zip = client.download("section_votes", sources["section_votes"])
+        zones, sections, detailed_quality = ingest_detailed_results(
+            candidates, places, region, municipality_zone_zip, section_zip, args.year
+        )
+        write_detailed_results(zones, sections, detailed_quality, args.year, region.slug)
+        print("Resultados oficiais por zona e seção importados em outputs/tables/.")
     return 0
 
 
