@@ -3,7 +3,7 @@
   const format = (n,digits=0) => Number(n).toLocaleString('pt-BR',{maximumFractionDigits:digits});
   const escape = value => String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const heatGradient={0.12:'#f7e7be',0.35:'#f5bd63',0.58:'#ee7840',0.8:'#cf3e28',1:'#7c1d1d'};
-  let map, overlays, latest, currentPoints=[], lastScope='', mode='density', peak=1;
+  let map, overlays, latest, currentPoints=[], lastScope='', mode='points', peak=1;
   function ensureMap() {
     if (map) return true;
     if (!window.L) { $('mapError').textContent='Não foi possível carregar o mapa. Os dados continuam disponíveis nas tabelas.';return false; }
