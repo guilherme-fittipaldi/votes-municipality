@@ -2,7 +2,7 @@
 
 Pipeline reprodutível para localizar a força eleitoral da Unidade Popular (UP) nos nove municípios da Baixada Santista, utilizando prioritariamente dados oficiais do Tribunal Superior Eleitoral (TSE).
 
-> Situação em 5 de outubro de 2026: candidaturas e locais de votação estão disponíveis; os resultados detalhados de 2026 ainda não foram publicados pelo TSE. A pipeline processa as fontes disponíveis e falha de forma explícita antes de calcular votos sem fonte oficial.
+> Situação em 9 de outubro de 2026: resultados oficiais por município/zona e por seção de SP foram importados e reconciliados. O dashboard permite explorar o território por zona, local de votação e seção.
 
 ## Escopo
 
@@ -16,7 +16,7 @@ O primeiro estágio produz:
 - manifesto de fontes/URLs e hashes de downloads;
 - relatório de qualidade pré-resultados.
 
-O Portal Resultados do TSE já permite uma etapa municipal via JSON oficial. Seção, zona, local e bairro continuam dependentes da publicação dos respectivos arquivos detalhados no Dados Abertos.
+O painel municipal usa JSON oficial do Portal Resultados do TSE. O explorador usa votação por seção de SP e votação nominal por município/zona do Portal de Dados Abertos, com junção ao cadastro oficial de locais.
 
 O controle de qualidade também registra candidaturas do cadastro que não aparecem nos resultados oficiais divulgados, sem inferir o motivo.
 
@@ -50,7 +50,13 @@ Importar a votação UP por município diretamente dos JSONs oficiais do Portal 
 python main.py --year 2026 --party UP --region baixada_santista --stage municipality-results
 ```
 
-O comando padrão executa o estágio pré-resultados e verifica a disponibilidade de votação por seção e município/zona. Enquanto esses recursos não existirem no Portal do TSE, termina com código 2 após gerar as saídas pré-resultados.
+Importar e reconciliar os arquivos detalhados:
+
+```powershell
+python main.py --year 2026 --party UP --region baixada_santista --stage detailed-results
+```
+
+O comando padrão executa todas as etapas:
 
 ```powershell
 python main.py --year 2026 --party UP --region baixada_santista
@@ -64,7 +70,7 @@ Fontes verificadas na discovery:
 
 - [Candidatos 2026 — TSE](https://dadosabertos.tse.jus.br/dataset/candidatos-2026)
 - [Eleitorado 2026 — TSE](https://dadosabertos.tse.jus.br/dataset/eleitorado-2026)
-- [Resultados 2022 — TSE](https://dadosabertos.tse.jus.br/dataset/resultados-2022)
+- [Resultados 2026 — TSE](https://dadosabertos.tse.jus.br/dataset/resultados-2026)
 
 Os CSVs TSE examinados usam delimitador `;` e CP1252/Latin-1. O leitor registra fallback de encoding, filtra SP/municípios precocemente e grava Parquet para os estágios analíticos seguintes.
 
@@ -92,3 +98,17 @@ PLAN.md            discovery, esquema, chaves e limitações
 - Correlações e índices futuros serão apresentados como associações/medidas descritivas, não como causalidade.
 
 Veja [PLAN.md](PLAN.md) para as fontes completas, colunas confirmadas e plano de implementação.
+
+## Dashboard
+
+Site estático publicado em [votes-municipality.vercel.app](https://votes-municipality.vercel.app/), com arquivos em `dashboard/dist`.
+
+Após executar a pipeline detalhada, gere o arquivo compacto do explorador:
+
+```powershell
+python dashboard/build_detailed_data.py
+```
+
+O gerador valida a reconciliação e as chaves de seção antes de exportar o JSON. A interface oferece filtros encadeados de município, zona e local, ranking por votos absolutos, navegação zona → local → seção, busca, paginação, inclusão opcional de unidades sem votos e CSV do resultado. Bairro identifica o endereço do local de votação segundo o TSE; não identifica a residência do eleitor. Os percentuais detalhados usam o total de votos da candidatura no recorte, não votos válidos.
+
+O cadastro tem 4.361 seções e 480 locais. Os arquivos detalhados importados de SP cobrem dez candidaturas UP e reconciliam 10.345 votos; a candidatura à Presidência, presente no painel municipal, não aparece nesse recorte detalhado e recebe um aviso de indisponibilidade. Unidades sem votos referem-se ao cadastro, sem inferir comparecimento.

@@ -1,4 +1,4 @@
-const state = { data: [], metric: 'percent_valid_votes' };
+const state = { data: [], metric: 'candidate_votes' };
 const labels = { percent_valid_votes: '% válidos', candidate_votes: 'votos', municipality_share_of_baixada_candidate_votes: '% da Baixada' };
 const brNumber = new Intl.NumberFormat('pt-BR');
 const brPercent = value => `${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
@@ -14,6 +14,7 @@ function render() {
   const total = rows.reduce((s,d)=>s+Number(d.candidate_votes),0); const top=rows[0];
   kpiVotes.textContent=brNumber.format(total); kpiPercent.textContent=brPercent(top.percent_valid_votes); kpiStronghold.textContent=top.municipality; kpiShare.textContent=brPercent(top.municipality_share_of_baixada_candidate_votes);
   chartTitle.textContent=`${top.ballot_name_registered} · ${top.office}`; tableCandidate.textContent=`Candidatura: ${top.ballot_name_registered}`; metricLabel.textContent=labels[state.metric];
+  document.dispatchEvent(new CustomEvent('candidatechange', { detail: { id: candidate.value, name: top.ballot_name_registered } }));
   const max=Math.max(...rows.map(d=>Number(d[state.metric]))); chart.innerHTML=rows.map(d=>`<div class="bar-row"><span class="bar-label">${d.municipality}</span><div class="track"><div class="bar" style="width:${(Number(d[state.metric])/max)*100}%"></div></div><span class="bar-value">${state.metric==='candidate_votes'?brNumber.format(d[state.metric]):brPercent(d[state.metric])}</span></div>`).join('');
   document.querySelector('#rows').innerHTML=rows.map(d=>`<tr><td>${d.municipality}</td><td>${brNumber.format(d.candidate_votes)}</td><td>${brPercent(d.percent_valid_votes)}</td><td>${brPercent(d.municipality_share_of_baixada_candidate_votes)}</td><td>${d.municipality_rank_proportional}º</td></tr>`).join('');
 }

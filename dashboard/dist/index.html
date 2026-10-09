@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Dashboard dos resultados municipais da Unidade Popular na Baixada Santista — Eleições 2026.">
+    <meta name="description" content="Explore os votos da Unidade Popular na Baixada Santista por município, zona, seção e local de votação — Eleições 2026.">
   <title>UP na Baixada Santista · 2026</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,12 +11,12 @@
   <header class="masthead">
     <div class="eyebrow">Eleições gerais · 2026 · dados oficiais TSE</div>
     <h1>Geografia eleitoral da <span>Unidade Popular</span></h1>
-    <p>Baixada Santista · leitura municipal</p>
+    <p>Baixada Santista · do município à seção eleitoral</p>
   </header>
 
   <main>
     <section class="notice" aria-label="Limite dos dados">
-      <strong>Escopo atual:</strong> resultados por município. O TSE ainda não publicou os arquivos necessários para análises por zona, seção, local de votação ou bairro.
+      <strong>Dados detalhados disponíveis:</strong> explore os resultados do 1º turno por zona, seção e local de votação. Os votos por seção foram reconciliados com os totais oficiais por município/zona. <a href="#explorerTitle">Ir para o explorador ↓</a>
     </section>
 
     <section class="filters" aria-label="Filtros do dashboard">
@@ -59,11 +59,52 @@
       </table></div>
     </section>
 
+    <section class="panel explorer" aria-labelledby="explorerTitle">
+      <div class="panel-title"><div><span class="section-label">Explore o território</span><h2 id="explorerTitle">Da zona à seção eleitoral</h2><p id="explorerCandidate" class="table-candidate">Usa a candidatura selecionada acima.</p></div><span class="pill">1º turno · 2026</span></div>
+      <p class="explorer-intro">Escolha um recorte ou clique em uma zona do ranking para explorar seus locais e seções.</p>
+      <div class="explorer-levels" role="group" aria-label="Agrupar resultados por">
+        <button type="button" data-level="zone" aria-pressed="true">Zonas</button>
+        <button type="button" data-level="place" aria-pressed="false">Locais de votação</button>
+        <button type="button" data-level="section" aria-pressed="false">Seções</button>
+      </div>
+      <div class="filters detail-filters">
+        <label>Município <span class="select-wrap"><select id="detailMunicipality"><option value="">Todos os municípios</option></select></span></label>
+        <label>Zona eleitoral <span class="select-wrap"><select id="detailZone"><option value="">Todas as zonas</option></select></span></label>
+        <label>Local de votação <span class="select-wrap"><select id="detailPlace"><option value="">Todos os locais</option></select></span></label>
+      </div>
+      <div class="explorer-context"><p id="detailBreadcrumb">Toda a Baixada Santista</p><button id="resetDetails" class="text-button" type="button">Limpar recorte</button></div>
+      <p id="detailStatus" class="detail-status" role="status" aria-live="polite">Carregando os dados detalhados…</p>
+      <div id="detailContent" hidden>
+        <div class="detail-stats" aria-label="Indicadores do recorte">
+          <div><span>Votos no recorte</span><strong id="detailVotes">—</strong></div>
+          <div><span>Participação na Baixada <button class="info table-info" type="button" aria-label="Explicação: participação do recorte" data-help="Votos da candidatura neste recorte divididos pelo total de votos da mesma candidatura nos nove municípios. Não é percentual de votos válidos." aria-expanded="false">ℹ️</button></span><strong id="detailShare">—</strong></div>
+          <div><span>Seções com votos</span><strong id="detailSections">—</strong></div>
+          <div><span>Locais no cadastro</span><strong id="detailPlaces">—</strong></div>
+        </div>
+        <div class="detail-chart-layout">
+          <div><div class="detail-chart-title"><h3 id="detailChartTitle">Ranking por zona</h3><span class="section-label">Até 10 · votos absolutos</span></div><div id="detailChart" class="bar-chart"></div></div>
+          <aside class="detail-guide"><span class="section-label">Como explorar</span><p id="detailGuide">Clique em uma zona para ver seus locais de votação.</p><p>Os filtros acima afetam apenas esta área. Cargo e candidatura são os mesmos do painel municipal.</p><p>Bairro é o informado pelo TSE para o endereço do local de votação.</p></aside>
+        </div>
+        <div class="detail-toolbar">
+          <label class="search-label">Buscar no resultado <input id="detailSearch" type="search" placeholder="Nome do local, bairro ou seção"></label>
+          <label class="zero-label"><input id="detailZeros" type="checkbox"> Mostrar unidades sem votos</label>
+          <button id="downloadDetails" type="button">Baixar CSV do recorte</button>
+        </div>
+        <p id="detailCount" class="detail-count" aria-live="polite"></p>
+        <div class="table-wrap"><table id="detailTable"><caption class="sr-only">Votos da candidatura selecionada no recorte territorial</caption><thead id="detailHead"></thead><tbody id="detailRows"></tbody></table></div>
+        <div class="detail-pagination"><button id="detailPrev" type="button">← Anterior</button><span id="detailPage">Página 1 de 1</span><button id="detailNext" type="button">Próxima →</button></div>
+        <p class="detail-footnote">Unidades sem votos vêm do cadastro de seções e locais do TSE. A ausência de votos da candidatura em uma seção cadastrada não indica comparecimento ou abstenção. Percentuais nesta área representam a distribuição dos votos da candidatura no recorte, e não votos válidos.</p>
+      </div>
+    </section>
+
     <section class="source-note">
-      <span>Fonte</span> Portal Resultados do TSE, JSON oficial por município, 1º turno. Atualização dos dados mostrada no arquivo de origem.
+      <span>Fontes</span> Portal Resultados do TSE (painel municipal) e <a href="https://dadosabertos.tse.jus.br/dataset/resultados-2026" target="_blank" rel="noreferrer">Dados Abertos do TSE</a> (explorador detalhado), 1º turno.
+      <br><a href="https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_SP.zip">Votação por seção de SP · publicado em 8/10</a> · <a href="https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip">Votação nominal por município/zona · publicado em 7/10</a>
     </section>
   </main>
   <footer>Projeto de análise eleitoral · resultados descritivos; não atribuir causalidade a padrões territoriais.</footer>
+  <script src="explorer-core.js"></script>
+  <script src="explorer.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

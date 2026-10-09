@@ -1,0 +1,83 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const { prepare, explore } = require('./dist/explorer-core.js');
+const data = prepare(JSON.parse(fs.readFileSync(path.join(__dirname,'dist/data/detailed-results.json'),'utf8')));
+for (const id of Object.keys(data.candidates)) {
+  for (const level of ['zone','place','section']) {
+    const result = explore(data, { candidate: id, level });
+    assert.equal(result.total, data.candidateTotals.get(id));
+    assert.equal(result.rows.reduce((total,row)=>total+row.votes,0), result.total);
+    assert.equal(result.sectionCount, 4361);
+    assert.equal(result.placeCount, 480);
+  }
+  for (const m of Object.keys(data.municipalities)) {
+    const expected = data.zones.filter(([cid,mid])=>cid===id&&mid===m).reduce((sum,r)=>sum+r[3],0);
+    assert.equal(explore(data,{candidate:id,level:'place',municipality:m}).total,expected);
+  }
+}
+assert.equal(explore(data,{candidate:'not-in-detailed-file',level:'section'}).available,false);
+const example = explore(data,{candidate:'250002536889',level:'place'}).rows[0];
+const narrow = explore(data,{candidate:'250002536889',level:'section',municipality:example.municipality_id,zone:example.zone,place:example.place_key});
+assert.equal(narrow.total,example.votes);
+assert.equal(narrow.placeCount,1);
+console.log('Aggregations verified: all candidates, municipalities, three levels, zero coverage and local drill-down.');
+
+async function browserChecks() {
+  const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
+  const browser = await chromium.launch({headless:true,...(process.env.CHROME_PATH ? {executablePath:process.env.CHROME_PATH} : {})});
+  try {
+    const page = await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(process.env.EXPLORER_URL || 'http://127.0.0.1:8765/',{waitUntil:'networkidle'});
+    await page.waitForSelector('#detailContent:not([hidden])');
+    assert.equal(await page.locator('#metric').inputValue(),'candidate_votes');
+    assert.equal(await page.locator('#detailVotes').textContent(),'319');
+    await page.locator('#detailMunicipality').selectOption('70718');
+    const zoneSelectValues = await page.locator('#detailZone option').evaluateAll(nodes=>nodes.map(n=>n.value));
+    assert(zoneSelectValues.length>1);
+    await page.locator('#detailChart [data-drill]').first().click();
+    assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
+    assert(await page.locator('#detailZone').inputValue());
+    await page.locator('#detailRows [data-drill]').first().click();
+    assert.equal(await page.locator('[data-level="section"]').getAttribute('aria-pressed'),'true');
+    assert(await page.locator('#detailPlace').inputValue());
+    assert.match(await page.locator('#detailRows').textContent(),/Bairro:/);
+    await page.locator('#detailZeros').check();
+    const countBefore = await page.locator('#detailCount').textContent();
+    await page.locator('#detailSearch').fill('a-search-with-no-matches');
+    assert.match(await page.locator('#detailRows').textContent(),/Nenhum resultado/);
+    await page.locator('#detailSearch').fill('');
+    assert.equal(await page.locator('#detailCount').textContent(), countBefore);
+    await page.locator('#metric').selectOption('percent_valid_votes');
+    assert.equal(await page.locator('#detailCount').textContent(), countBefore);
+    const promise=page.waitForEvent('download');await page.locator('#downloadDetails').click();const download=await promise;
+    const csv=fs.readFileSync(await download.path(),'utf8');
+    assert(csv.includes('share_of_filtered_candidate_votes'));
+    assert(csv.includes('JULIA CACHOS'));
+    await page.locator('#resetDetails').click();
+    assert.equal(await page.locator('#detailVotes').textContent(),'319');
+    await page.locator('[data-level="section"]').click();
+    assert.equal(await page.locator('#detailRows tr').count(),25);
+    await page.locator('#detailNext').click();assert.match(await page.locator('#detailPage').textContent(),/Página 2/);
+    await page.locator('#detailHead .table-info').click();assert.match(await page.locator('.table-help').textContent(),/Parcela dos votos/);
+    await page.keyboard.press('Escape');
+    await page.locator('#office').selectOption('PRESIDENTE');
+    assert(await page.locator('#detailContent').isHidden());
+    assert.match(await page.locator('#detailStatus').textContent(),/não foi encontrada/);
+    await page.locator('#office').selectOption('DEPUTADO ESTADUAL');
+    await page.locator('#metric').selectOption('candidate_votes');
+    await page.locator('#resetDetails').click();
+    await page.locator('#explorerTitle').scrollIntoViewIfNeeded();
+    await page.locator('.explorer').screenshot({path:'outputs/explorer-desktop.png'});
+    await page.setViewportSize({width:390,height:844});
+    await page.locator('[data-level="place"]').click();
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
+    assert.equal(overflow,false,'Mobile page must not overflow horizontally');
+    await page.locator('#explorerTitle').scrollIntoViewIfNeeded();
+    await page.screenshot({path:'outputs/explorer-mobile.png'});
+    assert.deepEqual(errors,[]);
+    console.log('Browser verified: cascading filters, drill-down, zero switch, search, pagination, CSV, help, missing candidate and mobile layout.');
+  } finally { await browser.close(); }
+}
+if (process.argv.includes('--browser')) browserChecks().catch(e=>{console.error(e);process.exitCode=1;});
