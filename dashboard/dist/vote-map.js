@@ -34,7 +34,7 @@
     layer.addTo(overlays);
   }
   function fit() {
-    if(!map||!currentPoints.length)return;
+    if(!map||!latest?.available||!currentPoints.length||!$('voteMap').clientWidth)return;
     map.invalidateSize({pan:false});map.fitBounds(currentPoints.map(p=>[p.latitude,p.longitude]),{padding:[28,28],maxZoom:14,animate:false});
   }
   function draw() {
