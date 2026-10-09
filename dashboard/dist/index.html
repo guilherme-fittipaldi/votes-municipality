@@ -94,6 +94,21 @@
           <p id="mapError" class="map-error" role="status"></p>
           <p class="detail-footnote" id="mapMethod">A mancha usa os votos registrados nos locais como pontos e suaviza a concentração visual em um raio de cerca de 2 km. Ela mostra concentração territorial, não uma medida literal de votos por km², nem a residência dos eleitores. Locais sem votos podem ser exibidos em cinza na camada de círculos.</p>
         </section>
+        <section class="neighborhood-panel" aria-labelledby="neighborhoodTitle">
+          <div class="panel-title"><div><span class="section-label">Leitura por bairro</span><h3 id="neighborhoodTitle">Ranking de bairros</h3><p class="neighborhood-intro">Votos registrados em locais cujo endereço o TSE classifica no mesmo bairro. Bairros iguais em municípios diferentes permanecem separados.</p></div><button id="showNeighborhoodPlaces" type="button">Ver locais do bairro líder</button></div>
+          <div class="neighborhood-stats" aria-label="Indicadores do bairro líder">
+            <div><span>Bairro com mais votos</span><strong id="neighborhoodLeader">—</strong><small id="neighborhoodLeaderCity">—</small></div>
+            <div><span>Votos no bairro líder</span><strong id="neighborhoodVotes">—</strong></div>
+            <div><span>Participação no recorte <button class="info table-info" type="button" aria-label="Explicação: participação do bairro" data-help="Votos da candidatura registrados nos locais daquele bairro divididos pelo total de votos da candidatura no recorte atual. Não mede votos válidos ou comparecimento." aria-expanded="false">ℹ️</button></span><strong id="neighborhoodShare">—</strong></div>
+            <div><span>Seções com votos</span><strong id="neighborhoodSections">—</strong><small id="neighborhoodSectionsTotal">—</small></div>
+          </div>
+          <div class="neighborhood-layout">
+            <div><div class="detail-chart-title"><h3>Top 12 por votos</h3><span class="section-label">Votos absolutos</span></div><div id="neighborhoodChart" class="bar-chart neighborhood-chart"></div></div>
+            <aside class="neighborhood-guide"><span class="section-label">Como usar</span><p>O botão de cada bairro abre os seus locais no explorador abaixo.</p><p>Este ranking descreve onde os votos foram registrados. Para medir impacto de panfletagem, vincule um registro de ações — data, local, quantidade e equipe — a este recorte.</p></aside>
+          </div>
+          <div class="table-wrap"><table id="neighborhoodTable"><caption class="sr-only">Ranking de bairros por votos da candidatura selecionada</caption><thead><tr><th>Bairro</th><th>Município</th><th>Votos</th><th>% no recorte</th><th>Seções com votos</th><th>Locais</th></tr></thead><tbody id="neighborhoodRows"></tbody></table></div>
+          <p id="neighborhoodNote" class="detail-footnote"></p>
+        </section>
         <div class="detail-chart-layout">
           <div><div class="detail-chart-title"><h3 id="detailChartTitle">Ranking por zona</h3><span class="section-label">Até 10 · votos absolutos</span></div><div id="detailChart" class="bar-chart"></div></div>
           <aside class="detail-guide"><span class="section-label">Como explorar</span><p id="detailGuide">Clique em uma zona para ver seus locais de votação.</p><p>Os filtros acima afetam apenas esta área. Cargo e candidatura são os mesmos do painel municipal.</p><p>Bairro é o informado pelo TSE para o endereço do local de votação.</p></aside>

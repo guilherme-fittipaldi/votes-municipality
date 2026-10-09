@@ -47,6 +47,41 @@
     setLevel(state.level === 'zone' ? 'place' : 'section');
     $('explorerTitle').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
+  function neighborhoodRows() {
+    const votes = state.data.voteIndex.get(state.candidate) || new Map();
+    const rows = new Map();
+    for (const [m,z,s,p] of state.data.sections) {
+      if ((municipality.value && m !== municipality.value) || (zone.value && z !== zone.value) || (place.value && p !== place.value)) continue;
+      const placeData = state.data.places[p];
+      const neighborhood = placeData.neighborhood?.trim() || 'Bairro não informado';
+      const key = `${m}:${neighborhood}`;
+      if (!rows.has(key)) rows.set(key, { key, municipality_id:m, municipality:state.data.municipalities[m], neighborhood, votes:0, sections:0, sectionsWithVotes:0, places:new Set() });
+      const row = rows.get(key), value = votes.get(`${m}:${z}:${s}`) || 0;
+      row.votes += value; row.sections++; if (value > 0) row.sectionsWithVotes++; row.places.add(p);
+    }
+    return [...rows.values()].map(row => ({ ...row, places:row.places.size, share:state.result.total ? 100 * row.votes / state.result.total : 0 })).sort((a,b) => b.votes-a.votes || sortText(a.municipality,b.municipality) || sortText(a.neighborhood,b.neighborhood));
+  }
+  function openNeighborhood(key) {
+    const row = state.neighborhoods.find(item => item.key === key); if (!row) return;
+    municipality.value=row.municipality_id; zone.value=''; place.value=''; populateZones(); populatePlaces();
+    setLevel('place'); $('detailSearch').value=row.neighborhood; filterRows();
+    $('detailTable').scrollIntoView({block:'start',behavior:'smooth'});
+  }
+  function renderNeighborhoods() {
+    state.neighborhoods = neighborhoodRows();
+    const lead = state.neighborhoods[0], positive = state.neighborhoods.filter(row => row.votes > 0);
+    $('showNeighborhoodPlaces').disabled=!lead;
+    if (!lead) return;
+    $('neighborhoodLeader').textContent=lead.neighborhood; $('neighborhoodLeaderCity').textContent=lead.municipality;
+    $('neighborhoodVotes').textContent=number(lead.votes); $('neighborhoodShare').textContent=percent(lead.share);
+    $('neighborhoodSections').textContent=number(lead.sectionsWithVotes); $('neighborhoodSectionsTotal').textContent=`de ${number(lead.sections)} no cadastro`;
+    const top=positive.slice(0,12), max=top[0]?.votes||1;
+    $('neighborhoodChart').innerHTML=top.length ? top.map(row => `<button type="button" class="detail-bar neighborhood-drill" data-neighborhood="${escape(row.key)}" aria-label="Ver locais de ${escape(row.neighborhood)}, ${escape(row.municipality)}"><span class="bar-label">${escape(row.neighborhood)}<small>${escape(row.municipality)}</small></span><span class="track"><span class="bar" style="display:block;width:${100*row.votes/max}%"></span></span><span class="bar-value">${number(row.votes)}</span></button>`).join('') : '<p class="detail-count">Nenhum bairro com votos neste recorte.</p>';
+    const display=positive.slice(0,20);
+    $('neighborhoodRows').innerHTML=display.map(row => `<tr><td><button type="button" class="drill-button neighborhood-drill" data-neighborhood="${escape(row.key)}">${escape(row.neighborhood)} ↗</button></td><td>${escape(row.municipality)}</td><td>${number(row.votes)}</td><td>${percent(row.share)}</td><td>${number(row.sectionsWithVotes)} de ${number(row.sections)}</td><td>${number(row.places)}</td></tr>`).join('') || '<tr><td colspan="6">Nenhum bairro com votos neste recorte.</td></tr>';
+    const unknown=state.neighborhoods.find(row => row.neighborhood === 'Bairro não informado');
+    $('neighborhoodNote').textContent=`Exibindo os ${number(display.length)} bairros com votos, de ${number(state.neighborhoods.length)} no cadastro. ${unknown ? `“Bairro não informado” reúne ${number(unknown.votes)} votos em endereços sem bairro informado pelo TSE.` : 'Todos os endereços deste recorte têm bairro informado pelo TSE.'}`;
+  }
   function render() {
     if (!state.data || !state.candidate) return;
     state.page = 0; breadcrumb();
@@ -66,6 +101,7 @@
     $('detailShare').textContent = percent(r.regionTotal ? 100 * r.total / r.regionTotal : 0);
     $('detailSections').innerHTML = `${number(r.sectionsWithVotes)} <small>de ${number(r.sectionCount)} no cadastro</small>`;
     $('detailPlaces').textContent = number(r.placeCount);
+    renderNeighborhoods();
     const levelName = {zone:'zona',place:'local de votação',section:'seção'}[state.level];
     $('detailChartTitle').textContent = `Ranking por ${levelName}`;
     $('detailGuide').textContent = state.level === 'zone' ? 'Clique em uma zona para ver seus locais de votação.' : state.level === 'place' ? 'Clique em um local para ver os votos em cada seção, com endereço e bairro.' : 'Cada seção é identificada pelo município, zona e número. Use os filtros para encontrar o local desejado.';
@@ -122,6 +158,9 @@
   $('detailSearch').addEventListener('input', filterRows); $('detailZeros').addEventListener('change', filterRows);
   $('detailPrev').addEventListener('click',()=>{state.page--;renderPage()}); $('detailNext').addEventListener('click',()=>{state.page++;renderPage()});
   $('resetDetails').addEventListener('click',()=>{municipality.value='';zone.value='';place.value='';$('detailSearch').value='';$('detailZeros').checked=false;populateZones();populatePlaces();setLevel('zone')});
+  $('showNeighborhoodPlaces').addEventListener('click',()=>openNeighborhood(state.neighborhoods?.[0]?.key));
+  $('neighborhoodTable').addEventListener('click',event=>{const button=event.target.closest('[data-neighborhood]');if(button)openNeighborhood(button.dataset.neighborhood)});
+  $('neighborhoodChart').addEventListener('click',event=>{const button=event.target.closest('[data-neighborhood]');if(button)openNeighborhood(button.dataset.neighborhood)});
   $('explorerTitle').closest('section').addEventListener('click', event => { const target=event.target.closest('[data-drill]');if(target)drill(target.dataset.drill); });
   $('downloadDetails').addEventListener('click',download);
   for (const select of [municipality,zone,place]) select.disabled=true;

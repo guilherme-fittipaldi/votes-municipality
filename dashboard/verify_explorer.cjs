@@ -35,7 +35,7 @@ const narrow = explore(data,{candidate:'250002536889',level:'section',municipali
 assert.equal(narrow.total,example.votes);
 assert.equal(narrow.placeCount,1);
 console.log('Aggregations verified: all candidates, municipalities, three levels, zero coverage and local drill-down.');
-console.log('Map verified: coordinates, unmapped votes, fixed grid areas and density conservation at all three scales.');
+console.log('Map verified: coordinates, unmapped votes, fixed-grid aggregation checks and vote conservation.');
 
 async function browserChecks() {
   const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -47,6 +47,10 @@ async function browserChecks() {
     await page.waitForSelector('#detailContent:not([hidden])');
     assert.equal(await page.locator('#metric').inputValue(),'candidate_votes');
     assert.equal(await page.locator('#detailVotes').textContent(),'319');
+    await page.waitForSelector('#neighborhoodRows tr');
+    assert.match(await page.locator('#neighborhoodLeader').textContent(),/\S/);
+    assert(Number(await page.locator('#neighborhoodVotes').textContent())>0);
+    assert(await page.locator('#neighborhoodRows tr').count()>0);
     await page.waitForSelector('#voteMap canvas');
     assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'density');
     await page.locator('#voteMap').scrollIntoViewIfNeeded();
@@ -94,6 +98,10 @@ async function browserChecks() {
     assert(csv.includes('JULIA CACHOS'));
     await page.locator('#resetDetails').click();
     assert.equal(await page.locator('#detailVotes').textContent(),'319');
+    await page.locator('#showNeighborhoodPlaces').click();
+    assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
+    assert(await page.locator('#detailSearch').inputValue());
+    await page.locator('#resetDetails').click();
     await page.locator('[data-level="section"]').click();
     assert.equal(await page.locator('#detailRows tr').count(),25);
     await page.locator('#detailNext').click();assert.match(await page.locator('#detailPage').textContent(),/Página 2/);
@@ -116,7 +124,7 @@ async function browserChecks() {
     await page.screenshot({path:'outputs/explorer-mobile.png'});
     await page.locator('.map-panel').screenshot({path:'outputs/map-mobile.png'});
     assert.deepEqual(errors,[]);
-    console.log('Browser verified: heatmap, scroll zoom, point mode, zero locations, map-to-section navigation, cascading filters, search, pagination, CSV and mobile layout.');
+    console.log('Browser verified: heatmap, scroll zoom, neighborhood ranking and drill-down, point mode, zero locations, map-to-section navigation, cascading filters, search, pagination, CSV and mobile layout.');
   } finally { await browser.close(); }
 }
 if (process.argv.includes('--browser')) browserChecks().catch(e=>{console.error(e);process.exitCode=1;});
