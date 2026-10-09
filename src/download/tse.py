@@ -55,6 +55,13 @@ def source_specs(year: int) -> tuple[ResourceSpec, ...]:
             True,
         ),
         ResourceSpec(
+            "president_section_votes",
+            f"resultados-{year}",
+            f"Presidente - Votação por seção eleitoral - {year}",
+            "Votação presidencial por seção, publicada pelo TSE em arquivo nacional separado.",
+            True,
+        ),
+        ResourceSpec(
             "candidate_municipality_zone_votes",
             f"resultados-{year}",
             "Votação nominal por município e zona",

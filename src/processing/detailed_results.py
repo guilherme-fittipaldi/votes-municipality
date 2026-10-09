@@ -36,6 +36,7 @@ def ingest_detailed_results(
     region: Region,
     municipality_zone_zip: Path,
     section_zip: Path,
+    president_section_zip: Path,
     year: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, object]]:
     """Filtra arquivos nacionais/estaduais antes de materializar dados da região."""
@@ -80,13 +81,18 @@ def ingest_detailed_results(
         "NR_VOTAVEL", "NM_VOTAVEL", "QT_VOTOS", "NR_LOCAL_VOTACAO", "SQ_CANDIDATO",
     ]
     section_pieces: list[pd.DataFrame] = []
-    section_name = f"votacao_secao_{year}_{region.state}.csv"
-    for chunk in _read_chunks(section_zip, section_name, section_columns):
-        _clean_key(chunk, "SQ_CANDIDATO")
-        _clean_key(chunk, "CD_MUNICIPIO", 5)
-        keep = chunk["SQ_CANDIDATO"].isin(candidate_ids) & chunk["CD_MUNICIPIO"].isin(municipality_ids)
-        if keep.any():
-            section_pieces.append(chunk.loc[keep].copy())
+    # O TSE separa a disputa presidencial em um arquivo nacional. Filtramos pelos
+    # municípios da região antes de materializar os registros em memória.
+    for zip_path, csv_name in (
+        (section_zip, f"votacao_secao_{year}_{region.state}.csv"),
+        (president_section_zip, f"votacao_secao_{year}_BR.csv"),
+    ):
+        for chunk in _read_chunks(zip_path, csv_name, section_columns):
+            _clean_key(chunk, "SQ_CANDIDATO")
+            _clean_key(chunk, "CD_MUNICIPIO", 5)
+            keep = chunk["SQ_CANDIDATO"].isin(candidate_ids) & chunk["CD_MUNICIPIO"].isin(municipality_ids)
+            if keep.any():
+                section_pieces.append(chunk.loc[keep].copy())
     if not section_pieces:
         raise ValueError("Nenhum voto por seção da UP foi encontrado no arquivo oficial")
     sections = pd.concat(section_pieces, ignore_index=True).rename(
@@ -124,6 +130,27 @@ def ingest_detailed_results(
     sections = sections.merge(places_join, on=section_key, how="left", validate="many_to_one")
     sections = sections.sort_values(["office", "candidate_id", "municipality_id", "electoral_zone", "electoral_section"]).reset_index(drop=True)
 
+    # A fonte município/zona não contém Presidente. Para esse cargo, a zona é
+    # agregada diretamente do arquivo oficial de seção, sem misturar controles
+    # de fontes distintas para os demais cargos.
+    zone_candidate_ids = set(zones["candidate_id"])
+    missing_zone_candidates = set(sections["candidate_id"]) - zone_candidate_ids
+    if missing_zone_candidates:
+        president_zones = (
+            sections.loc[sections["candidate_id"].isin(missing_zone_candidates)]
+            .groupby(
+                ["candidate_id", "municipality_id", "municipality", "electoral_zone", "office_code", "office",
+                 "candidate_number", "candidate_name", "ballot_name", "party", "year", "state"],
+                as_index=False,
+                dropna=False,
+            )["candidate_votes_section"]
+            .sum()
+            .rename(columns={"candidate_votes_section": "candidate_votes_zone"})
+        )
+        president_zones["candidate_valid_votes_zone"] = 0
+        zones = pd.concat([zones, president_zones[zones.columns]], ignore_index=True)
+        zones = zones.sort_values(["office", "candidate_id", "municipality_id", "electoral_zone"]).reset_index(drop=True)
+
     reconciliation_keys = ["candidate_id", "municipality_id", "electoral_zone"]
     section_totals = sections.groupby(reconciliation_keys, as_index=False)["candidate_votes_section"].sum()
     checks = zones[reconciliation_keys + ["candidate_votes_zone"]].merge(
@@ -143,5 +170,8 @@ def ingest_detailed_results(
         "reconciliation_difference_abs": int(checks["difference"].abs().sum()),
         "sections_total_votes": int(sections["candidate_votes_section"].sum()),
         "zones_total_votes": int(zones["candidate_votes_zone"].sum()),
+        "zone_rows_derived_from_presidential_sections": int(
+            zones["candidate_id"].isin(missing_zone_candidates).sum()
+        ),
     }
     return zones, sections, quality

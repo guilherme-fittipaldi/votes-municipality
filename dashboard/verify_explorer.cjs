@@ -117,8 +117,9 @@ async function browserChecks() {
     await page.locator('#detailHead .table-info').click();assert.match(await page.locator('.table-help').textContent(),/Parcela dos votos/);
     await page.keyboard.press('Escape');
     await page.locator('#office').selectOption('PRESIDENTE');
-    assert(await page.locator('#detailContent').isHidden());
-    assert.match(await page.locator('#detailStatus').textContent(),/não foi encontrada/);
+    await page.waitForSelector('#detailContent:not([hidden])');
+    assert.match(await page.locator('#candidate option:checked').textContent(),/SAMARA/);
+    assert.equal(await page.locator('#detailVotes').textContent(),'2.002');
     await page.locator('#office').selectOption('DEPUTADO ESTADUAL');
     await page.locator('#metric').selectOption('candidate_votes');
     await page.locator('#resetDetails').click();

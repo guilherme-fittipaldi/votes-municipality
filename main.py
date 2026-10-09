@@ -124,7 +124,7 @@ def main() -> int:
 
     if args.stage in {"detailed-results", "all"}:
         unavailable = [
-            key for key in ("section_votes", "candidate_municipality_zone_votes")
+            key for key in ("section_votes", "president_section_votes", "candidate_municipality_zone_votes")
             if sources[key]["state"] != "available"
         ]
         if unavailable:
@@ -137,8 +137,9 @@ def main() -> int:
             "candidate_municipality_zone_votes", sources["candidate_municipality_zone_votes"]
         )
         section_zip = client.download("section_votes", sources["section_votes"])
+        president_section_zip = client.download("president_section_votes", sources["president_section_votes"])
         zones, sections, detailed_quality = ingest_detailed_results(
-            candidates, places, region, municipality_zone_zip, section_zip, args.year
+            candidates, places, region, municipality_zone_zip, section_zip, president_section_zip, args.year
         )
         write_detailed_results(zones, sections, detailed_quality, args.year, region.slug)
         print("Resultados oficiais por zona e seção importados em outputs/tables/.")
