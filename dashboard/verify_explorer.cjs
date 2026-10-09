@@ -3,6 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { prepare, explore } = require('./dist/explorer-core.js');
 const data = prepare(JSON.parse(fs.readFileSync(path.join(__dirname,'dist/data/detailed-results.json'),'utf8')));
+const mapCore = require('./dist/map-core.js');
+assert.equal(Object.values(data.places).filter(mapCore.validCoordinates).length,478);
 for (const id of Object.keys(data.candidates)) {
   for (const level of ['zone','place','section']) {
     const result = explore(data, { candidate: id, level });
@@ -10,6 +12,17 @@ for (const id of Object.keys(data.candidates)) {
     assert.equal(result.rows.reduce((total,row)=>total+row.votes,0), result.total);
     assert.equal(result.sectionCount, 4361);
     assert.equal(result.placeCount, 480);
+    if (level==='place') {
+      const points=mapCore.preparePlaces(data,result.rows);
+      assert.equal(points.mappedVotes+points.missingVotes,result.total);
+      assert.equal(points.missing.length,2);
+      for(const size of [1,2,5]) {
+        const cells=mapCore.grid(points.mapped,size);
+        assert.equal(cells.reduce((sum,c)=>sum+c.votes,0),points.mappedVotes);
+        assert(cells.every(c=>Math.abs(c.areaKm2-size*size)<0.00001));
+        assert(cells.every(c=>Math.abs(c.density*c.areaKm2-c.votes)<0.000001));
+      }
+    }
   }
   for (const m of Object.keys(data.municipalities)) {
     const expected = data.zones.filter(([cid,mid])=>cid===id&&mid===m).reduce((sum,r)=>sum+r[3],0);
@@ -22,6 +35,7 @@ const narrow = explore(data,{candidate:'250002536889',level:'section',municipali
 assert.equal(narrow.total,example.votes);
 assert.equal(narrow.placeCount,1);
 console.log('Aggregations verified: all candidates, municipalities, three levels, zero coverage and local drill-down.');
+console.log('Map verified: coordinates, unmapped votes, fixed grid areas and density conservation at all three scales.');
 
 async function browserChecks() {
   const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -33,7 +47,27 @@ async function browserChecks() {
     await page.waitForSelector('#detailContent:not([hidden])');
     assert.equal(await page.locator('#metric').inputValue(),'candidate_votes');
     assert.equal(await page.locator('#detailVotes').textContent(),'319');
+    await page.waitForSelector('#voteMap .leaflet-interactive');
+    assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'density');
+    assert.equal(await page.locator('#voteMap').getAttribute('data-place-count'),'478');
+    assert.match(await page.locator('#mapCoverage').textContent(),/2 locais sem coordenadas/);
+    await page.locator('#mapGridSize').selectOption('1');
+    await page.locator('[data-map-mode="points"]').click();
+    assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'points');
+    assert(await page.locator('#mapGridControl').isHidden());
+    await page.locator('#mapZeros').uncheck();
+    assert(Number(await page.locator('#voteMap').getAttribute('data-place-count'))<478);
+    // Open a symbol through its accessible keyboard target, then drill into sections.
+    await page.locator('#voteMap path.leaflet-interactive').first().focus();await page.keyboard.press('Enter');
+    await page.waitForSelector('.map-explore-place');
+    await page.locator('.map-explore-place').first().click();
+    assert.equal(await page.locator('[data-level="section"]').getAttribute('aria-pressed'),'true');
+    assert.equal(await page.locator('#voteMap').getAttribute('data-place-count'),'1');
+    await page.locator('#resetDetails').click();
+    await page.locator('[data-map-mode="density"]').click();
+    await page.locator('#mapGridSize').selectOption('2');await page.locator('#mapZeros').check();
     await page.locator('#detailMunicipality').selectOption('70718');
+    assert(Number(await page.locator('#voteMap').getAttribute('data-place-count'))<478);
     const zoneSelectValues = await page.locator('#detailZone option').evaluateAll(nodes=>nodes.map(n=>n.value));
     assert(zoneSelectValues.length>1);
     await page.locator('#detailChart [data-drill]').first().click();
@@ -70,14 +104,16 @@ async function browserChecks() {
     await page.locator('#resetDetails').click();
     await page.locator('#explorerTitle').scrollIntoViewIfNeeded();
     await page.locator('.explorer').screenshot({path:'outputs/explorer-desktop.png'});
+    await page.locator('.map-panel').screenshot({path:'outputs/map-desktop.png'});
     await page.setViewportSize({width:390,height:844});
     await page.locator('[data-level="place"]').click();
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
     assert.equal(overflow,false,'Mobile page must not overflow horizontally');
     await page.locator('#explorerTitle').scrollIntoViewIfNeeded();
     await page.screenshot({path:'outputs/explorer-mobile.png'});
+    await page.locator('.map-panel').screenshot({path:'outputs/map-mobile.png'});
     assert.deepEqual(errors,[]);
-    console.log('Browser verified: cascading filters, drill-down, zero switch, search, pagination, CSV, help, missing candidate and mobile layout.');
+    console.log('Browser verified: map modes, grid scale, zero locations, keyboard popups, map-to-section navigation, cascading filters, search, pagination, CSV and mobile layout.');
   } finally { await browser.close(); }
 }
 if (process.argv.includes('--browser')) browserChecks().catch(e=>{console.error(e);process.exitCode=1;});

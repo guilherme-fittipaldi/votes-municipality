@@ -6,6 +6,7 @@
     <meta name="description" content="Explore os votos da Unidade Popular na Baixada Santista por município, zona, seção e local de votação — Eleições 2026.">
   <title>UP na Baixada Santista · 2026</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="vendor/leaflet.css">
 </head>
 <body>
   <header class="masthead">
@@ -81,6 +82,19 @@
           <div><span>Seções com votos</span><strong id="detailSections">—</strong></div>
           <div><span>Locais no cadastro</span><strong id="detailPlaces">—</strong></div>
         </div>
+        <section class="map-panel" aria-labelledby="mapTitle">
+          <div class="panel-title"><div><span class="section-label">Concentração espacial</span><h3 id="mapTitle">Onde os votos se concentram</h3><p class="map-intro">Mesma candidatura e mesmos filtros de município, zona e local do explorador.</p></div><button id="mapFit" type="button">Enquadrar recorte</button></div>
+          <div class="map-toolbar">
+            <div class="map-modes" role="group" aria-label="Visualização do mapa"><button type="button" data-map-mode="density" aria-pressed="true">Densidade por área</button><button type="button" data-map-mode="points" aria-pressed="false">Votos por local</button></div>
+            <label id="mapGridControl">Tamanho da área <span class="select-wrap"><select id="mapGridSize"><option value="1">1 km² · mais detalhe</option><option value="2" selected>4 km² · intermediário</option><option value="5">25 km² · visão regional</option></select></span></label>
+            <label class="zero-label"><input id="mapZeros" type="checkbox" checked> Mostrar locais sem votos</label>
+          </div>
+          <div id="voteMap" class="vote-map" role="region" aria-label="Mapa interativo dos votos registrados nos locais de votação" tabindex="0"></div>
+          <div id="mapLegend" class="map-legend" aria-label="Legenda do mapa"></div>
+          <p id="mapCoverage" class="map-coverage" role="status" aria-live="polite"></p>
+          <p id="mapError" class="map-error" role="status"></p>
+          <p class="detail-footnote" id="mapMethod">Densidade = votos registrados nos locais dentro da célula ÷ área da célula em km². A grade tem células de área aproximada de 1, 4 ou 25 km², sem recorte pela linha da costa ou limites municipais. Não representa a residência dos eleitores. Áreas sem locais cadastrados ficam sem camada; células sem votos e círculos com zero votos aparecem em cinza.</p>
+        </section>
         <div class="detail-chart-layout">
           <div><div class="detail-chart-title"><h3 id="detailChartTitle">Ranking por zona</h3><span class="section-label">Até 10 · votos absolutos</span></div><div id="detailChart" class="bar-chart"></div></div>
           <aside class="detail-guide"><span class="section-label">Como explorar</span><p id="detailGuide">Clique em uma zona para ver seus locais de votação.</p><p>Os filtros acima afetam apenas esta área. Cargo e candidatura são os mesmos do painel municipal.</p><p>Bairro é o informado pelo TSE para o endereço do local de votação.</p></aside>
@@ -100,10 +114,14 @@
     <section class="source-note">
       <span>Fontes</span> Portal Resultados do TSE (painel municipal) e <a href="https://dadosabertos.tse.jus.br/dataset/resultados-2026" target="_blank" rel="noreferrer">Dados Abertos do TSE</a> (explorador detalhado), 1º turno.
       <br><a href="https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_SP.zip">Votação por seção de SP · publicado em 8/10</a> · <a href="https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip">Votação nominal por município/zona · publicado em 7/10</a>
+      <br>Endereços, bairros e coordenadas: <a href="https://dadosabertos.tse.jus.br/dataset/eleitorado-2026" target="_blank" rel="noreferrer">cadastro de locais de votação do TSE</a>.
     </section>
   </main>
   <footer>Projeto de análise eleitoral · resultados descritivos; não atribuir causalidade a padrões territoriais.</footer>
   <script src="explorer-core.js"></script>
+  <script src="vendor/leaflet.js"></script>
+  <script src="map-core.js"></script>
+  <script src="vote-map.js"></script>
   <script src="explorer.js"></script>
   <script src="app.js"></script>
 </body>

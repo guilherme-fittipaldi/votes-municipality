@@ -55,6 +55,10 @@
       candidate: state.candidate, level: state.level, municipality: municipality.value, zone: zone.value, place: place.value,
     });
     $('detailContent').hidden = !state.result.available;
+    document.dispatchEvent(new CustomEvent('detailmapchange',{detail:{
+      data:state.data,name:state.name,available:state.result.available,
+      filters:{candidate:state.candidate,municipality:municipality.value,zone:zone.value,place:place.value},
+    }}));
     $('detailStatus').textContent = state.result.available ? '' : `A candidatura ${state.name} não foi encontrada nas fontes detalhadas importadas de SP. Seus resultados municipais continuam disponíveis no painel acima.`;
     if (!state.result.available) return;
     const r = state.result;
@@ -102,6 +106,11 @@
   document.addEventListener('candidatechange', event => {
     if (state.candidate === event.detail.id) return;
     state.candidate = event.detail.id; state.name = event.detail.name; render();
+  });
+  document.addEventListener('exploreplace',event=>{
+    const key=event.detail.key,selected=state.data?.places[key];if(!selected)return;
+    municipality.value=selected.municipality_id;populateZones();zone.value=selected.zone;populatePlaces();place.value=key;
+    setLevel('section');$('detailTable').scrollIntoView({block:'start',behavior:'smooth'});
   });
   municipality.addEventListener('change', () => { zone.value='';place.value='';populateZones();populatePlaces();render(); });
   zone.addEventListener('change', () => { place.value='';populatePlaces();render(); });

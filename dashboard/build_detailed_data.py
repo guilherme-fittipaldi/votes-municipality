@@ -12,6 +12,14 @@ def read_csv(path):
         return list(csv.DictReader(stream))
 
 
+def coordinate(value, minimum, maximum):
+    try:
+        parsed = float(value.replace(",", "."))
+        return parsed if minimum <= parsed <= maximum else None
+    except (ValueError, AttributeError):
+        return None
+
+
 def build():
     section_rows = read_csv(ROOT / "outputs/tables/up_votes_section_baixada_santista_2026.csv")
     zone_rows = read_csv(ROOT / "outputs/tables/up_votes_municipality_zone_baixada_santista_2026.csv")
@@ -24,6 +32,8 @@ def build():
         places[key] = {
             "id": p, "municipality_id": m, "zone": z, "name": row["polling_place"],
             "address": row["address"], "neighborhood": row["neighborhood"],
+            "latitude": coordinate(row["latitude"], -25, -23),
+            "longitude": coordinate(row["longitude"], -48, -45),
         }
         sections.append([m, z, s, key])
     votes = []
@@ -54,12 +64,14 @@ def build():
         "sources": {
             "section": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_secao/votacao_secao_2026_SP.zip",
             "zone": "https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip",
+            "places": "https://cdn.tse.jus.br/estatistica/sead/odsele/eleitorado_locais_votacao/eleitorado_local_votacao_2026.zip",
         },
     }
     path = ROOT / "dashboard/dist/data/detailed-results.json"
     path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"Explorador: {len(municipalities)} municípios, {len(places)} locais, {len(sections)} seções, {len(votes)} registros de votos.")
     print(f"Reconciliação exata: {sum(v[-1] for v in votes)} votos; JSON: {path.stat().st_size:,} bytes.")
+    print(f"Locais com coordenadas válidas: {sum(p['latitude'] is not None and p['longitude'] is not None for p in places.values())} de {len(places)}.")
 
 
 if __name__ == "__main__":
