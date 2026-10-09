@@ -5,7 +5,7 @@
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fold = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const sortText = (a,b) => a.localeCompare(b, 'pt-BR', { numeric: true });
-  const state = { data: null, candidate: '', name: '', level: 'zone', page: 0, result: null, visible: [], failed: false };
+  const state = { data: null, candidate: '', name: '', level: 'place', page: 0, result: null, visible: [], failed: false };
   const municipality = $('detailMunicipality'), zone = $('detailZone'), place = $('detailPlace');
   const pageSize = 25;
 
@@ -61,17 +61,20 @@
     }
     return [...rows.values()].map(row => ({ ...row, places:row.places.size, share:state.result.total ? 100 * row.votes / state.result.total : 0 })).sort((a,b) => b.votes-a.votes || sortText(a.municipality,b.municipality) || sortText(a.neighborhood,b.neighborhood));
   }
-  function openNeighborhood(key) {
+  function openNeighborhood(key, includeZeros = false) {
     const row = state.neighborhoods.find(item => item.key === key); if (!row) return;
     municipality.value=row.municipality_id; zone.value=''; place.value=''; populateZones(); populatePlaces();
-    setLevel('place'); $('detailSearch').value=row.neighborhood; filterRows();
+    setLevel('place'); $('detailSearch').value=row.neighborhood; if (includeZeros) $('detailZeros').checked=true; filterRows();
     $('detailTable').scrollIntoView({block:'start',behavior:'smooth'});
   }
   function renderNeighborhoods() {
     state.neighborhoods = neighborhoodRows();
     const lead = state.neighborhoods[0], positive = state.neighborhoods.filter(row => row.votes > 0);
+    const low = state.neighborhoods.slice().sort((a,b) => a.votes-b.votes || sortText(a.municipality,b.municipality) || sortText(a.neighborhood,b.neighborhood));
+    const lowLead = low[0];
     $('showNeighborhoodPlaces').disabled=!lead;
-    if (!lead) return;
+    $('showLowNeighborhoodPlaces').disabled=!lowLead;
+    if (!lead || !lowLead) return;
     $('neighborhoodLeader').textContent=lead.neighborhood; $('neighborhoodLeaderCity').textContent=lead.municipality;
     $('neighborhoodVotes').textContent=number(lead.votes); $('neighborhoodShare').textContent=percent(lead.share);
     $('neighborhoodSections').textContent=number(lead.sectionsWithVotes); $('neighborhoodSectionsTotal').textContent=`de ${number(lead.sections)} no cadastro`;
@@ -81,6 +84,13 @@
     $('neighborhoodRows').innerHTML=display.map(row => `<tr><td><button type="button" class="drill-button neighborhood-drill" data-neighborhood="${escape(row.key)}">${escape(row.neighborhood)} ↗</button></td><td>${escape(row.municipality)}</td><td>${number(row.votes)}</td><td>${percent(row.share)}</td><td>${number(row.sectionsWithVotes)} de ${number(row.sections)}</td><td>${number(row.places)}</td></tr>`).join('') || '<tr><td colspan="6">Nenhum bairro com votos neste recorte.</td></tr>';
     const unknown=state.neighborhoods.find(row => row.neighborhood === 'Bairro não informado');
     $('neighborhoodNote').textContent=`Exibindo os ${number(display.length)} bairros com votos, de ${number(state.neighborhoods.length)} no cadastro. ${unknown ? `“Bairro não informado” reúne ${number(unknown.votes)} votos em endereços sem bairro informado pelo TSE.` : 'Todos os endereços deste recorte têm bairro informado pelo TSE.'}`;
+    $('neighborhoodLowLeader').textContent=lowLead.neighborhood; $('neighborhoodLowLeaderCity').textContent=lowLead.municipality;
+    $('neighborhoodLowVotes').textContent=number(lowLead.votes); $('neighborhoodLowSections').textContent=number(lowLead.sectionsWithVotes); $('neighborhoodLowSectionsTotal').textContent=`de ${number(lowLead.sections)} no cadastro`; $('neighborhoodLowPlaces').textContent=number(lowLead.places);
+    const lowDisplay=low.slice(0,20), lowMax=Math.max(1,...lowDisplay.map(row=>row.votes));
+    $('neighborhoodLowChart').innerHTML=lowDisplay.map(row => `<button type="button" class="detail-bar neighborhood-drill" data-neighborhood="${escape(row.key)}" aria-label="Ver locais de ${escape(row.neighborhood)}, ${escape(row.municipality)}"><span class="bar-label">${escape(row.neighborhood)}<small>${escape(row.municipality)}</small></span><span class="track"><span class="bar low-bar" style="display:block;width:${row.votes ? Math.max(2,100*row.votes/lowMax) : 2}%"></span></span><span class="bar-value">${number(row.votes)}</span></button>`).join('');
+    $('neighborhoodLowRows').innerHTML=lowDisplay.map(row => `<tr><td><button type="button" class="drill-button neighborhood-drill" data-neighborhood="${escape(row.key)}">${escape(row.neighborhood)} ↗</button></td><td>${escape(row.municipality)}</td><td>${number(row.votes)}</td><td>${number(row.sectionsWithVotes)} de ${number(row.sections)}</td><td>${number(row.places)}</td></tr>`).join('');
+    const zeroCount=low.filter(row=>row.votes===0).length;
+    $('neighborhoodLowNote').textContent=`Exibindo os ${number(lowDisplay.length)} menores resultados, de ${number(low.length)} bairros no cadastro. ${number(zeroCount)} bairros não registraram votos para esta candidatura no recorte atual.`;
   }
   function render() {
     if (!state.data || !state.candidate) return;
@@ -157,10 +167,16 @@
   document.querySelectorAll('[data-level]').forEach(button => button.addEventListener('click', () => setLevel(button.dataset.level)));
   $('detailSearch').addEventListener('input', filterRows); $('detailZeros').addEventListener('change', filterRows);
   $('detailPrev').addEventListener('click',()=>{state.page--;renderPage()}); $('detailNext').addEventListener('click',()=>{state.page++;renderPage()});
-  $('resetDetails').addEventListener('click',()=>{municipality.value='';zone.value='';place.value='';$('detailSearch').value='';$('detailZeros').checked=false;populateZones();populatePlaces();setLevel('zone')});
+  $('resetDetails').addEventListener('click',()=>{municipality.value='';zone.value='';place.value='';$('detailSearch').value='';$('detailZeros').checked=false;populateZones();populatePlaces();setLevel('place')});
   $('showNeighborhoodPlaces').addEventListener('click',()=>openNeighborhood(state.neighborhoods?.[0]?.key));
+  $('showLowNeighborhoodPlaces').addEventListener('click',()=>{
+    const row=state.neighborhoods?.slice().sort((a,b)=>a.votes-b.votes||sortText(a.municipality,b.municipality)||sortText(a.neighborhood,b.neighborhood))[0];
+    openNeighborhood(row?.key,true);
+  });
   $('neighborhoodTable').addEventListener('click',event=>{const button=event.target.closest('[data-neighborhood]');if(button)openNeighborhood(button.dataset.neighborhood)});
   $('neighborhoodChart').addEventListener('click',event=>{const button=event.target.closest('[data-neighborhood]');if(button)openNeighborhood(button.dataset.neighborhood)});
+  $('neighborhoodLowTable').addEventListener('click',event=>{const button=event.target.closest('[data-neighborhood]');if(button)openNeighborhood(button.dataset.neighborhood,true)});
+  $('neighborhoodLowChart').addEventListener('click',event=>{const button=event.target.closest('[data-neighborhood]');if(button)openNeighborhood(button.dataset.neighborhood,true)});
   $('explorerTitle').closest('section').addEventListener('click', event => { const target=event.target.closest('[data-drill]');if(target)drill(target.dataset.drill); });
   $('downloadDetails').addEventListener('click',download);
   for (const select of [municipality,zone,place]) select.disabled=true;

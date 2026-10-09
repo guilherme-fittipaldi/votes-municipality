@@ -64,8 +64,8 @@
       <div class="panel-title"><div><span class="section-label">Explore o território</span><h2 id="explorerTitle">Da zona à seção eleitoral</h2><p id="explorerCandidate" class="table-candidate">Usa a candidatura selecionada acima.</p></div><span class="pill">1º turno · 2026</span></div>
       <p class="explorer-intro">Escolha um recorte ou clique em uma zona do ranking para explorar seus locais e seções.</p>
       <div class="explorer-levels" role="group" aria-label="Agrupar resultados por">
-        <button type="button" data-level="zone" aria-pressed="true">Zonas</button>
-        <button type="button" data-level="place" aria-pressed="false">Locais de votação</button>
+        <button type="button" data-level="zone" aria-pressed="false">Zonas</button>
+        <button type="button" data-level="place" aria-pressed="true">Locais de votação</button>
         <button type="button" data-level="section" aria-pressed="false">Seções</button>
       </div>
       <div class="filters detail-filters">
@@ -108,6 +108,21 @@
           </div>
           <div class="table-wrap"><table id="neighborhoodTable"><caption class="sr-only">Ranking de bairros por votos da candidatura selecionada</caption><thead><tr><th>Bairro</th><th>Município</th><th>Votos</th><th>% no recorte</th><th>Seções com votos</th><th>Locais</th></tr></thead><tbody id="neighborhoodRows"></tbody></table></div>
           <p id="neighborhoodNote" class="detail-footnote"></p>
+          <section class="neighborhood-low" aria-labelledby="neighborhoodLowTitle">
+            <div class="panel-title"><div><span class="section-label">Prioridade territorial</span><h3 id="neighborhoodLowTitle">Bairros com menor votação</h3><p class="neighborhood-intro">Inclui bairros sem votos registrados para a candidatura. Eles podem orientar investigação e reforço territorial, sem atribuir a causa do resultado.</p></div><button id="showLowNeighborhoodPlaces" type="button">Ver locais do bairro menor</button></div>
+            <div class="neighborhood-stats low-stats" aria-label="Indicadores do bairro com menor votação">
+              <div><span>Bairro com menor votação</span><strong id="neighborhoodLowLeader">—</strong><small id="neighborhoodLowLeaderCity">—</small></div>
+              <div><span>Votos registrados</span><strong id="neighborhoodLowVotes">—</strong></div>
+              <div><span>Seções com votos</span><strong id="neighborhoodLowSections">—</strong><small id="neighborhoodLowSectionsTotal">—</small></div>
+              <div><span>Locais no bairro</span><strong id="neighborhoodLowPlaces">—</strong></div>
+            </div>
+            <div class="neighborhood-layout">
+              <div><div class="detail-chart-title"><h3>20 menores resultados</h3><span class="section-label">Inclui zero</span></div><div id="neighborhoodLowChart" class="bar-chart neighborhood-chart low-chart"></div></div>
+              <aside class="neighborhood-guide low-guide"><span class="section-label">Interpretação</span><p>Zero significa ausência de voto da candidatura nas seções cadastradas para aquele bairro, não ausência de eleitorado ou de comparecimento.</p><p>Compare com os locais e seções antes de decidir qualquer ação de campanha.</p></aside>
+            </div>
+            <div class="table-wrap"><table id="neighborhoodLowTable"><caption class="sr-only">Bairros com menor votação da candidatura selecionada</caption><thead><tr><th>Bairro</th><th>Município</th><th>Votos</th><th>Seções com votos</th><th>Locais</th></tr></thead><tbody id="neighborhoodLowRows"></tbody></table></div>
+            <p id="neighborhoodLowNote" class="detail-footnote"></p>
+          </section>
         </section>
         <div class="detail-chart-layout">
           <div><div class="detail-chart-title"><h3 id="detailChartTitle">Ranking por zona</h3><span class="section-label">Até 10 · votos absolutos</span></div><div id="detailChart" class="bar-chart"></div></div>

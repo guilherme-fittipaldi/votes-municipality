@@ -46,11 +46,14 @@ async function browserChecks() {
     await page.goto(process.env.EXPLORER_URL || 'http://127.0.0.1:8765/',{waitUntil:'networkidle'});
     await page.waitForSelector('#detailContent:not([hidden])');
     assert.equal(await page.locator('#metric').inputValue(),'candidate_votes');
+    assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
     assert.equal(await page.locator('#detailVotes').textContent(),'319');
     await page.waitForSelector('#neighborhoodRows tr');
     assert.match(await page.locator('#neighborhoodLeader').textContent(),/\S/);
     assert(Number(await page.locator('#neighborhoodVotes').textContent())>0);
     assert(await page.locator('#neighborhoodRows tr').count()>0);
+    assert(await page.locator('#neighborhoodLowRows tr').count()>0);
+    assert.match(await page.locator('#neighborhoodLowNote').textContent(),/não registraram votos/);
     await page.waitForSelector('#voteMap canvas');
     assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'density');
     await page.locator('#voteMap').scrollIntoViewIfNeeded();
@@ -62,6 +65,7 @@ async function browserChecks() {
     assert.match(await page.locator('#mapCoverage').textContent(),/2 locais sem coordenadas/);
     await page.locator('[data-map-mode="points"]').click();
     assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'points');
+    assert.match(await page.locator('#mapLegend').textContent(),/0[\s\S]*1–10[\s\S]*11–20[\s\S]*21–30[\s\S]*31–39[\s\S]*40\+/);
     await page.locator('#mapZeros').uncheck();
     assert(Number(await page.locator('#voteMap').getAttribute('data-place-count'))<478);
     // Open a symbol through its accessible keyboard target, then drill into sections.
@@ -77,6 +81,7 @@ async function browserChecks() {
     assert(Number(await page.locator('#voteMap').getAttribute('data-place-count'))<478);
     const zoneSelectValues = await page.locator('#detailZone option').evaluateAll(nodes=>nodes.map(n=>n.value));
     assert(zoneSelectValues.length>1);
+    await page.locator('[data-level="zone"]').click();
     await page.locator('#detailChart [data-drill]').first().click();
     assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
     assert(await page.locator('#detailZone').inputValue());
@@ -101,6 +106,10 @@ async function browserChecks() {
     await page.locator('#showNeighborhoodPlaces').click();
     assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
     assert(await page.locator('#detailSearch').inputValue());
+    await page.locator('#resetDetails').click();
+    await page.locator('#showLowNeighborhoodPlaces').click();
+    assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
+    assert.equal(await page.locator('#detailZeros').isChecked(),true);
     await page.locator('#resetDetails').click();
     await page.locator('[data-level="section"]').click();
     assert.equal(await page.locator('#detailRows tr').count(),25);

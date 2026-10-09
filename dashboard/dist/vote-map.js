@@ -31,6 +31,14 @@
     for(const point of points){const key=`${point.latitude}:${point.longitude}`;if(!groups.has(key))groups.set(key,{latitude:point.latitude,longitude:point.longitude,votes:0,places:[]});const group=groups.get(key);group.votes+=point.votes;group.places.push(point);}
     return [...groups.values()];
   }
+  function voteBand(votes) {
+    if (votes === 0) return { label:'0 votos', fill:'#b3bcb6', stroke:'#617067' };
+    if (votes <= 10) return { label:'1–10 votos', fill:'#f3c75d', stroke:'#9b6a18' };
+    if (votes <= 20) return { label:'11–20 votos', fill:'#ef9245', stroke:'#a5481f' };
+    if (votes <= 30) return { label:'21–30 votos', fill:'#db5934', stroke:'#8a2d20' };
+    if (votes < 40) return { label:'31–39 votos', fill:'#ad342b', stroke:'#651b1a' };
+    return { label:'40+ votos', fill:'#6d1b1b', stroke:'#3c1111' };
+  }
   function placeList(points) {
     return `<ul class="map-place-list">${points.slice().sort((a,b)=>b.votes-a.votes).map(p=>`<li><strong>${escape(p.place_name)}</strong><br>${escape(p.municipality)} · Zona ${escape(p.zone)} · ${format(p.votes)} votos<br><span>${escape(p.address)}${p.neighborhood?` · ${escape(p.neighborhood)}`:''}</span><br><button type="button" class="map-explore-place" data-map-place="${escape(p.place_key)}">Ver seções deste local →</button></li>`).join('')}</ul>`;
   }
@@ -62,10 +70,11 @@
     } else {
       peak=Math.max(1,...coordinateGroups(reference.mapped).map(p=>p.votes));
       for(const point of coordinateGroups(currentPoints)) {
-        const layer=L.circleMarker([point.latitude,point.longitude],{radius:point.votes?4+18*Math.sqrt(point.votes/peak):3,weight:1.5,color:point.votes?'#7a2b1c':'#617067',fillColor:point.votes?'#ec5c35':'#b3bcb6',fillOpacity:point.votes?.7:.5});
-        addPopup(layer,`<div class="map-popup"><span class="section-label">Votos registrados no local</span><h4>${format(point.votes)} votos</h4><p>${escape(name)}${point.places.length>1?` · ${point.places.length} locais nesta coordenada`:''}</p>${placeList(point.places)}</div>`,`${format(point.votes)} votos em ${point.places[0].place_name}. Abrir detalhes.`);
+        const band=voteBand(point.votes);
+        const layer=L.circleMarker([point.latitude,point.longitude],{radius:point.votes?4+18*Math.sqrt(point.votes/peak):3,weight:1.5,color:band.stroke,fillColor:band.fill,fillOpacity:point.votes?.78:.55});
+        addPopup(layer,`<div class="map-popup"><span class="section-label">Votos registrados no local</span><h4>${format(point.votes)} votos</h4><p><span class="map-band" style="background:${band.fill}"></span>${band.label} · ${escape(name)}${point.places.length>1?` · ${point.places.length} locais nesta coordenada`:''}</p>${placeList(point.places)}</div>`,`${format(point.votes)} votos em ${point.places[0].place_name}. Abrir detalhes.`);
       }
-      $('mapLegend').innerHTML='<strong>Votos por local</strong><span><i class="legend-point"></i>Quanto maior o círculo, mais votos</span><span><i style="background:#b3bcb6"></i>Zero votos</span><small>Locais na mesma coordenada são somados no símbolo e detalhados ao clicar.</small>';
+      $('mapLegend').innerHTML='<strong>Votos por local</strong><span><i class="legend-point"></i>Tamanho: mais votos</span><span><i style="background:#b3bcb6"></i>0</span><span><i style="background:#f3c75d"></i>1–10</span><span><i style="background:#ef9245"></i>11–20</span><span><i style="background:#db5934"></i>21–30</span><span><i style="background:#ad342b"></i>31–39</span><span><i style="background:#6d1b1b"></i>40+</span><small>Locais na mesma coordenada são somados no símbolo e detalhados ao clicar.</small>';
     }
     const hiddenZeros=recorte.mapped.length-currentPoints.length;
     $('mapCoverage').textContent=`${format(recorte.mappedVotes)} de ${format(selected.total)} votos do recorte com coordenadas válidas · ${format(currentPoints.length)} locais exibidos${hiddenZeros?` · ${format(hiddenZeros)} locais sem votos ocultos`:''}.${recorte.missing.length?` ${format(recorte.missing.length)} locais sem coordenadas válidas, com ${format(recorte.missingVotes)} votos: constam nas tabelas, mas não no mapa.`:''}`;
