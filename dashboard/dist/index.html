@@ -85,15 +85,14 @@
         <section class="map-panel" aria-labelledby="mapTitle">
           <div class="panel-title"><div><span class="section-label">Concentração espacial</span><h3 id="mapTitle">Onde os votos se concentram</h3><p class="map-intro">Mesma candidatura e mesmos filtros de município, zona e local do explorador.</p></div><button id="mapFit" type="button">Enquadrar recorte</button></div>
           <div class="map-toolbar">
-            <div class="map-modes" role="group" aria-label="Visualização do mapa"><button type="button" data-map-mode="density" aria-pressed="true">Densidade por área</button><button type="button" data-map-mode="points" aria-pressed="false">Votos por local</button></div>
-            <label id="mapGridControl">Tamanho da área <span class="select-wrap"><select id="mapGridSize"><option value="1">1 km² · mais detalhe</option><option value="2" selected>4 km² · intermediário</option><option value="5">25 km² · visão regional</option></select></span></label>
+            <div class="map-modes" role="group" aria-label="Visualização do mapa"><button type="button" data-map-mode="density" aria-pressed="true">Mancha de calor</button><button type="button" data-map-mode="points" aria-pressed="false">Votos por local</button></div>
             <label class="zero-label"><input id="mapZeros" type="checkbox" checked> Mostrar locais sem votos</label>
           </div>
           <div id="voteMap" class="vote-map" role="region" aria-label="Mapa interativo dos votos registrados nos locais de votação" tabindex="0"></div>
           <div id="mapLegend" class="map-legend" aria-label="Legenda do mapa"></div>
           <p id="mapCoverage" class="map-coverage" role="status" aria-live="polite"></p>
           <p id="mapError" class="map-error" role="status"></p>
-          <p class="detail-footnote" id="mapMethod">Densidade = votos registrados nos locais dentro da célula ÷ área da célula em km². A grade tem células de área aproximada de 1, 4 ou 25 km², sem recorte pela linha da costa ou limites municipais. Não representa a residência dos eleitores. Áreas sem locais cadastrados ficam sem camada; células sem votos e círculos com zero votos aparecem em cinza.</p>
+          <p class="detail-footnote" id="mapMethod">A mancha usa os votos registrados nos locais como pontos e suaviza a concentração visual em um raio de cerca de 2 km. Ela mostra concentração territorial, não uma medida literal de votos por km², nem a residência dos eleitores. Locais sem votos podem ser exibidos em cinza na camada de círculos.</p>
         </section>
         <div class="detail-chart-layout">
           <div><div class="detail-chart-title"><h3 id="detailChartTitle">Ranking por zona</h3><span class="section-label">Até 10 · votos absolutos</span></div><div id="detailChart" class="bar-chart"></div></div>
@@ -120,6 +119,7 @@
   <footer>Projeto de análise eleitoral · resultados descritivos; não atribuir causalidade a padrões territoriais.</footer>
   <script src="explorer-core.js"></script>
   <script src="vendor/leaflet.js"></script>
+  <script src="vendor/leaflet-heat.js"></script>
   <script src="map-core.js"></script>
   <script src="vote-map.js"></script>
   <script src="explorer.js"></script>

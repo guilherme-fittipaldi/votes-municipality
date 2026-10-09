@@ -2,12 +2,12 @@
   const $ = id => document.getElementById(id);
   const format = (n,digits=0) => Number(n).toLocaleString('pt-BR',{maximumFractionDigits:digits});
   const escape = value => String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const colors=['#fee4ba','#f9bb76','#f48c45','#da522a','#9d261d'], fractions=[.1,.25,.5,.75,1];
+  const heatGradient={0.12:'#f7e7be',0.35:'#f5bd63',0.58:'#ee7840',0.8:'#cf3e28',1:'#7c1d1d'};
   let map, overlays, latest, currentPoints=[], lastScope='', mode='density', peak=1;
   function ensureMap() {
     if (map) return true;
     if (!window.L) { $('mapError').textContent='Não foi possível carregar o mapa. Os dados continuam disponíveis nas tabelas.';return false; }
-    map=L.map('voteMap',{scrollWheelZoom:false,minZoom:8,maxZoom:18}).setView([-24.03,-46.45],10);
+    map=L.map('voteMap',{scrollWheelZoom:true,minZoom:8,maxZoom:18}).setView([-24.03,-46.45],10);
     const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
       maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Coordenadas: TSE',
     }).addTo(map);
@@ -15,11 +15,17 @@
     tiles.on('tileerror',()=>{failed++;if(failed>=3)$('mapError').textContent='O mapa de ruas não carregou. A camada de votos permanece disponível; tente recarregar a página.';});
     tiles.on('tileload',()=>{$('mapError').textContent='';failed=0;});
     overlays=L.layerGroup().addTo(map);
+    const mapElement=$('voteMap');
+    mapElement.dataset.zoom=String(map.getZoom());
+    map.on('zoomend',()=>{mapElement.dataset.zoom=String(map.getZoom());});
     $('voteMap').querySelector('.leaflet-control-zoom-in').title='Aproximar mapa';$('voteMap').querySelector('.leaflet-control-zoom-out').title='Afastar mapa';
-    new ResizeObserver(()=>{map.invalidateSize({pan:false});fit();}).observe($('voteMap'));
+    new ResizeObserver(()=>{
+      const element=$('voteMap');
+      if(!element.clientWidth||!element.clientHeight)return;
+      map.invalidateSize({pan:false});fit();
+    }).observe($('voteMap'));
     return true;
   }
-  function color(value) {if(value===0)return '#b3bcb6';return colors[fractions.findIndex(f=>value<=peak*f)]||colors[colors.length-1];}
   function coordinateGroups(points) {
     const groups=new Map();
     for(const point of points){const key=`${point.latitude}:${point.longitude}`;if(!groups.has(key))groups.set(key,{latitude:point.latitude,longitude:point.longitude,votes:0,places:[]});const group=groups.get(key);group.votes+=point.votes;group.places.push(point);}
@@ -47,16 +53,12 @@
     const showZeros=$('mapZeros').checked;
     currentPoints=recorte.mapped.filter(p=>showZeros||p.votes>0);
     overlays.clearLayers();map.closePopup();
-    const size=Number($('mapGridSize').value);
     const scope=[filters.candidate,filters.municipality,filters.zone,filters.place].join('|');
     if(mode==='density') {
-      peak=Math.max(1,...ElectoralMap.grid(reference.mapped,size).map(c=>c.density));
-      for(const cell of ElectoralMap.grid(currentPoints,size)) {
-        const layer=L.rectangle(cell.bounds,{color:'#fffef8',weight:1,fillColor:color(cell.density),fillOpacity:cell.votes?0.76:0.3});
-        const content=`<div class="map-popup"><span class="section-label">Densidade na célula</span><h4>${format(cell.density,2)} votos/km²</h4><p>${format(cell.votes)} votos de ${escape(name)} · área ${format(cell.areaKm2,2)} km² · ${format(cell.places.length)} locais</p>${placeList(cell.places)}</div>`;
-        addPopup(layer,content,`${format(cell.density,2)} votos por km²; ${format(cell.votes)} votos, ${cell.places.length} locais. Abrir detalhes.`);
-      }
-      $('mapLegend').innerHTML=`<strong>Votos/km²</strong><span class="legend-zero"><i style="background:#b3bcb6"></i>0</span>${colors.map((c,i)=>`<span><i style="background:${c}"></i>${i===0?'> 0':format(peak*fractions[i-1],2)} – ${format(peak*fractions[i],2)}</span>`).join('')}<small>Escala fixa para esta candidatura e tamanho de célula na Baixada.</small>`;
+      if(!L.heatLayer){$('mapError').textContent='Não foi possível carregar a camada de calor. Troque para “Votos por local” ou recarregue a página.';return;}
+      const intensity=Math.max(1,...currentPoints.map(point=>point.votes));
+      L.heatLayer(currentPoints.filter(point=>point.votes>0).map(point=>[point.latitude,point.longitude,point.votes/intensity]),{radius:32,blur:26,max:1,minOpacity:.2,gradient:heatGradient}).addTo(overlays);
+      $('mapLegend').innerHTML='<strong>Concentração de votos</strong><span><i class="legend-heat legend-low"></i>Menor</span><span><i class="legend-heat legend-mid"></i>Média</span><span><i class="legend-heat legend-high"></i>Maior</span><small>Raio visual aproximado de 2 km. A intensidade relativa é recalculada para o recorte atual.</small>';
     } else {
       peak=Math.max(1,...coordinateGroups(reference.mapped).map(p=>p.votes));
       for(const point of coordinateGroups(currentPoints)) {
@@ -65,7 +67,6 @@
       }
       $('mapLegend').innerHTML='<strong>Votos por local</strong><span><i class="legend-point"></i>Quanto maior o círculo, mais votos</span><span><i style="background:#b3bcb6"></i>Zero votos</span><small>Locais na mesma coordenada são somados no símbolo e detalhados ao clicar.</small>';
     }
-    $('mapGridControl').hidden=mode!=='density';
     const hiddenZeros=recorte.mapped.length-currentPoints.length;
     $('mapCoverage').textContent=`${format(recorte.mappedVotes)} de ${format(selected.total)} votos do recorte com coordenadas válidas · ${format(currentPoints.length)} locais exibidos${hiddenZeros?` · ${format(hiddenZeros)} locais sem votos ocultos`:''}.${recorte.missing.length?` ${format(recorte.missing.length)} locais sem coordenadas válidas, com ${format(recorte.missingVotes)} votos: constam nas tabelas, mas não no mapa.`:''}`;
     if(!currentPoints.length)$('mapCoverage').textContent+=' Nenhum local para exibir com estes filtros.';
@@ -74,6 +75,6 @@
   }
   document.addEventListener('detailmapchange',event=>{latest=event.detail;if(!latest.available){overlays?.clearLayers();map?.closePopup();lastScope='';return;}draw();});
   document.querySelectorAll('[data-map-mode]').forEach(button=>button.addEventListener('click',()=>{mode=button.dataset.mapMode;document.querySelectorAll('[data-map-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));draw();}));
-  $('mapGridSize').addEventListener('change',draw);$('mapZeros').addEventListener('change',draw);$('mapFit').addEventListener('click',fit);
+  $('mapZeros').addEventListener('change',draw);$('mapFit').addEventListener('click',fit);
   $('voteMap').addEventListener('click',event=>{const button=event.target.closest('[data-map-place]');if(button)document.dispatchEvent(new CustomEvent('exploreplace',{detail:{key:button.dataset.mapPlace}}));});
 })();

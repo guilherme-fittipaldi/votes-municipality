@@ -47,14 +47,17 @@ async function browserChecks() {
     await page.waitForSelector('#detailContent:not([hidden])');
     assert.equal(await page.locator('#metric').inputValue(),'candidate_votes');
     assert.equal(await page.locator('#detailVotes').textContent(),'319');
-    await page.waitForSelector('#voteMap .leaflet-interactive');
+    await page.waitForSelector('#voteMap canvas');
     assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'density');
+    await page.locator('#voteMap').scrollIntoViewIfNeeded();
+    const mapBox=await page.locator('#voteMap').boundingBox();
+    const zoomBefore=Number(await page.locator('#voteMap').getAttribute('data-zoom'));
+    await page.mouse.move(mapBox.x+mapBox.width/2,mapBox.y+mapBox.height/2);await page.mouse.wheel(0,-360);
+    await page.waitForFunction(previous=>Number(document.querySelector('#voteMap').dataset.zoom)>previous,zoomBefore);
     assert.equal(await page.locator('#voteMap').getAttribute('data-place-count'),'478');
     assert.match(await page.locator('#mapCoverage').textContent(),/2 locais sem coordenadas/);
-    await page.locator('#mapGridSize').selectOption('1');
     await page.locator('[data-map-mode="points"]').click();
     assert.equal(await page.locator('#voteMap').getAttribute('data-mode'),'points');
-    assert(await page.locator('#mapGridControl').isHidden());
     await page.locator('#mapZeros').uncheck();
     assert(Number(await page.locator('#voteMap').getAttribute('data-place-count'))<478);
     // Open a symbol through its accessible keyboard target, then drill into sections.
@@ -65,7 +68,7 @@ async function browserChecks() {
     assert.equal(await page.locator('#voteMap').getAttribute('data-place-count'),'1');
     await page.locator('#resetDetails').click();
     await page.locator('[data-map-mode="density"]').click();
-    await page.locator('#mapGridSize').selectOption('2');await page.locator('#mapZeros').check();
+    await page.locator('#mapZeros').check();
     await page.locator('#detailMunicipality').selectOption('70718');
     assert(Number(await page.locator('#voteMap').getAttribute('data-place-count'))<478);
     const zoneSelectValues = await page.locator('#detailZone option').evaluateAll(nodes=>nodes.map(n=>n.value));
@@ -113,7 +116,7 @@ async function browserChecks() {
     await page.screenshot({path:'outputs/explorer-mobile.png'});
     await page.locator('.map-panel').screenshot({path:'outputs/map-mobile.png'});
     assert.deepEqual(errors,[]);
-    console.log('Browser verified: map modes, grid scale, zero locations, keyboard popups, map-to-section navigation, cascading filters, search, pagination, CSV and mobile layout.');
+    console.log('Browser verified: heatmap, scroll zoom, point mode, zero locations, map-to-section navigation, cascading filters, search, pagination, CSV and mobile layout.');
   } finally { await browser.close(); }
 }
 if (process.argv.includes('--browser')) browserChecks().catch(e=>{console.error(e);process.exitCode=1;});
