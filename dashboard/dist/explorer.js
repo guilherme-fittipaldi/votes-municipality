@@ -48,7 +48,7 @@
     $('explorerTitle').scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
   function neighborhoodRows() {
-    const votes = state.data.voteIndex.get(state.candidate) || new Map();
+    const votes = ElectoralExplorer.votesFor(state.data, state.candidate);
     const rows = new Map();
     for (const [m,z,s,p] of state.data.sections) {
       if ((municipality.value && m !== municipality.value) || (zone.value && z !== zone.value) || (place.value && p !== place.value)) continue;

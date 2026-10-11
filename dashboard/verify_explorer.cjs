@@ -30,6 +30,9 @@ for (const id of Object.keys(data.candidates)) {
   }
 }
 assert.equal(explore(data,{candidate:'not-in-detailed-file',level:'section'}).available,false);
+const senatorIds=Object.entries(data.candidates).filter(([,candidate])=>candidate.office==='Senador').map(([id])=>id);
+const senatorTotal=senatorIds.reduce((sum,id)=>sum+data.candidateTotals.get(id),0);
+assert.equal(explore(data,{candidate:'__all__:SENADOR',level:'place'}).total,senatorTotal);
 const example = explore(data,{candidate:'250002536889',level:'place'}).rows[0];
 const narrow = explore(data,{candidate:'250002536889',level:'section',municipality:example.municipality_id,zone:example.zone,place:example.place_key});
 assert.equal(narrow.total,example.votes);
@@ -49,6 +52,11 @@ async function browserChecks() {
     assert.equal(await page.locator('[data-level="place"]').getAttribute('aria-pressed'),'true');
     assert.match(await page.locator('#candidate option:checked').textContent(),/MAÍRA DE SOUZA/);
     assert.equal(await page.locator('#detailVotes').textContent(),'4.243');
+    assert.equal(await page.locator('#candidate option').first().textContent(),'Todos no cargo (soma da UP)');
+    await page.locator('#candidate').selectOption('__all__:SENADOR');
+    await page.waitForFunction(()=>Number(document.querySelector('#detailVotes').textContent.replace(/\D/g,''))>4243);
+    await page.locator('#candidate').selectOption('250002544516');
+    await page.waitForFunction(()=>document.querySelector('#detailVotes').textContent==='4.243');
     await page.waitForSelector('#neighborhoodRows tr');
     assert.match(await page.locator('#neighborhoodLeader').textContent(),/\S/);
     assert(Number(await page.locator('#neighborhoodVotes').textContent())>0);
