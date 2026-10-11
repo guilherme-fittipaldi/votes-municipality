@@ -60,6 +60,25 @@
       </table></div>
     </section>
 
+    <section class="panel comparative" aria-labelledby="comparativeTitle">
+      <div class="panel-title"><div><span class="section-label">Tabelas comparativas</span><h2 id="comparativeTitle">Candidaturas, cidades e bairros</h2><p class="comparative-intro">Compare votos absolutos com o eleitorado cadastrado. Use os filtros e baixe os recortes em CSV.</p></div></div>
+      <div class="filters comparative-filters">
+        <label>Cargo <span class="select-wrap"><select id="comparisonOffice"></select></span></label>
+        <label>Candidatura <span class="select-wrap"><select id="comparisonCandidate"></select></span></label>
+        <label>Município (bairros) <span class="select-wrap"><select id="comparisonMunicipality"></select></span></label>
+      </div>
+      <div class="comparative-actions"><button id="downloadCandidateMatrix" type="button">Baixar matriz de candidaturas</button><button id="downloadComparisonRows" type="button">Baixar indicadores por município</button><button id="downloadNeighborhoodRows" type="button">Baixar bairros</button></div>
+      <h3>Matriz de votos por candidatura e município</h3>
+      <div class="table-wrap"><table id="candidateMatrix"><thead></thead><tbody></tbody></table></div>
+      <p class="detail-footnote">A linha <strong>Total UP · todos os cargos</strong> soma votos de todas as candidaturas e cargos. Como uma mesma pessoa pode votar em mais de um cargo, ela representa seleções de voto, não eleitores únicos.</p>
+      <h3>Indicadores por município</h3>
+      <div class="table-wrap"><table id="comparisonRows"><thead><tr><th>Candidatura</th><th>Cargo</th><th>Município</th><th>Votos</th><th>Eleitorado</th><th>Votos / eleitorado</th><th>Votos válidos do cargo</th></tr></thead><tbody></tbody></table></div>
+      <p class="detail-footnote">“Votos / eleitorado” compara votos com o eleitorado cadastrado no município. “Votos válidos do cargo” permanece a medida eleitoral comparável entre candidaturas do mesmo cargo.</p>
+      <h3>Votação por bairro</h3>
+      <div class="table-wrap"><table id="comparisonNeighborhoods"><thead><tr><th>Bairro</th><th>Município</th><th>Votos</th><th>Eleitorado nas seções</th><th>Votos / eleitorado</th></tr></thead><tbody></tbody></table></div>
+      <p class="detail-footnote">O eleitorado do bairro é a soma do eleitorado cadastrado pelo TSE nas seções dos locais daquele bairro; não é uma estimativa de residência dos eleitores.</p>
+    </section>
+
     <section class="panel explorer" aria-labelledby="explorerTitle">
       <div class="panel-title"><div><span class="section-label">Explore o território</span><h2 id="explorerTitle">Da zona à seção eleitoral</h2><p id="explorerCandidate" class="table-candidate">Usa a candidatura selecionada acima.</p></div><span class="pill">1º turno · 2026</span></div>
       <p class="explorer-intro">Escolha um recorte ou clique em uma zona do ranking para explorar seus locais e seções.</p>
@@ -154,5 +173,6 @@
   <script src="vote-map.js"></script>
   <script src="explorer.js"></script>
   <script src="app.js"></script>
+  <script src="comparative-tables.js"></script>
 </body>
 </html>

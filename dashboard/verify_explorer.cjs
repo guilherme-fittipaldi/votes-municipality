@@ -53,6 +53,14 @@ async function browserChecks() {
     assert.match(await page.locator('#candidate option:checked').textContent(),/MAÍRA DE SOUZA/);
     assert.equal(await page.locator('#detailVotes').textContent(),'4.243');
     assert.equal(await page.locator('#candidate option').first().textContent(),'Todos no cargo (soma da UP)');
+    await page.waitForSelector('#candidateMatrix tbody tr');
+    assert.equal(await page.locator('#candidateMatrix tbody tr').count(),12);
+    assert.match(await page.locator('#candidateMatrix tbody tr').first().textContent(),/Total UP/);
+    await page.locator('#comparisonOffice').selectOption('DEPUTADO ESTADUAL');
+    assert.equal(await page.locator('#candidateMatrix tbody tr').count(),2);
+    await page.locator('#comparisonCandidate').selectOption('250002536889');
+    await page.locator('#comparisonMunicipality').selectOption('70718');
+    assert(await page.locator('#comparisonNeighborhoods tbody tr').count()>0);
     await page.locator('#candidate').selectOption('__all__:SENADOR');
     await page.waitForFunction(()=>Number(document.querySelector('#detailVotes').textContent.replace(/\D/g,''))>4243);
     await page.locator('#candidate').selectOption('250002544516');
